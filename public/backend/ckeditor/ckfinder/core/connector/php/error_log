@@ -1,0 +1,1 @@
+[03-Sep-2022 02:20:36 UTC] PHP Warning:  imagecreatefromstring(): gd-png: libpng warning: Interlace handling should be turned on when using png_read_image in /home/bigm/public_html/public/backend/ckeditor/ckfinder/core/connector/php/vendor/cksource/ckfinder/src/CKSource/CKFinder/Image.php on line 135
