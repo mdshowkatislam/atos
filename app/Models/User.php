@@ -71,6 +71,16 @@ public function hasRole($roleName)
 {
     return $this->roles && $this->roles->contains('name', $roleName);
 }
+
+public function user_roles()
+    {
+        return $this->belongsTo(UserRole::class, 'id', 'user_id');
+    }
+
+    public function user_role()
+    {
+        return $this->hasMany(UserRole::class, 'user_id', 'id');
+    }
 }
 
 

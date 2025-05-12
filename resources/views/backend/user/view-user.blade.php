@@ -1,7 +1,11 @@
-@extends('backend.layouts.app')
-@section('content')
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
+@extends('layouts.master')
+{{-- Customize layout sections --}}
+@section('subtitle', 'Databases')
+@section('content_header_title', 'User Management')
+@section('content_header_subtitle', 'Users List')
+@section('content_body')
+
+<div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
@@ -9,7 +13,8 @@
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">@lang('Home')</a></li>
+                        {{-- <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">@lang('Home')</a></li> --}}
+                        <li class="breadcrumb-item"><a href="#">@lang('Home')</a></li> &nbsp;
                         <li class="breadcrumb-item active">@lang('User')</li>
                     </ol>
                 </div>
@@ -35,10 +40,9 @@
                 <div class="card card-outline card-primary">
                     <div class="card-header">
                         <h5 class="float-left">{{ $type == 'user' ? 'User List' : 'Club User List' }}</h5>
-                        <a class="btn btn-sm btn-success float-right" href="{{ route('user.add') }}"><i class="fa fa-plus-circle"></i> @lang('User') @lang('Add')</a>
-                        <a class="btn btn-sm btn-success float-right mx-2" href="{{ route('club_member_user.add') }}"><i class="fa fa-plus-circle"></i> @lang('Club Member To') @lang('User')</a>
-                        <a class="btn btn-sm btn-success float-right" href="{{ route('personals_user.add') }}"><i class="fa fa-plus-circle"></i> @lang('Personals To') @lang('User')</a>
-                        <a class="btn btn-sm btn-success float-right mx-2" href="{{ route('club.user.list') }}"><i class="fa fa-list"></i> @lang('Club User') @lang('List')</a>
+                        
+                        <a class="btn btn-sm btn-success float-right ml-2" href="{{ route('user.add') }}"><i class="fa fa-plus-circle"></i> @lang('User') @lang('Add')</a>
+                    
                         <a class="btn btn-sm btn-success float-right" href="{{ route('user') }}"><i class="fa fa-list"></i>
                             @lang('User') @lang('List')</a>
                     </div>
@@ -155,4 +159,8 @@
         });
     </script>
 
-@endsection
+@stop
+
+@push('js')
+    <script> console.log("Hi, We are using the access to sql package!"); </script>
+@endpush

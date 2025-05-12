@@ -24,8 +24,11 @@ class UserController extends Controller
 
     public function index()
     {
+        
         $data['user'] = User::with(['user_roles'])->where('id', '!=', 1)->latest()->get();
         $data['type'] = 'user';
+
+        // dd( $data['user']);
 
         return view('backend.user.view-user', $data);
     }
