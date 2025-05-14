@@ -3,7 +3,7 @@
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
-use App\Http\Controllers\Backend\DatabaseListController;
+use App\Http\Controllers\Backend\DatabaseController;
 
  
 
@@ -12,7 +12,9 @@ Route::get('/access/tables', [AccessController::class, 'listTables'])->name('acc
 Route::get('/access/sql/{table}', [AccessController::class, 'convertToSQL'])->name('access.sql');
 Route::get('/access/table/{table}', [AccessController::class, 'showTable'])->name('access.showTable');
 
-
+Route::get('/', function() {
+    return view('welcome');
+})->name('welcome');
 
 Auth::routes();
 
@@ -20,13 +22,15 @@ Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\Backend\HomeController::class, 'index'])->name('home');
 
-Route::get('admin/settings/databases', function () {
-    return view('show_all_db');
-});
-Route::get('admin/db_management/db_list', function () {
-    return view('show_all_db');
-});
-Route::get('admin/db_management/db_list', [DatabaseListController::class, 'index'])->name('db_management.db_list');
+// Route::get('admin/settings/databases', function () {
+//     return view('show_all_db');
+// });
+// Route::get('admin/db_management/db_list', function () {
+//     return view('show_all_db');
+// });
+
+Route::get('admin/database_list', [DatabaseController::class, 'index'])->name('admin.database_list');
+Route::get('admin/database/table/{db}', [DatabaseController::class, 'show'])->name('admin.database.table');
 
 Route::get('admin/user_management/users', [UserController::class, 'index'])->name('user_management.users');
 

@@ -357,7 +357,7 @@ return [
             'submenu' => [
                 [
                     'text' => 'All Databases',
-                    'url' => 'admin/settings/databases',
+                    'url' => 'admin/database_list',
                 ],
                 [
                     'text' => 'level_one',

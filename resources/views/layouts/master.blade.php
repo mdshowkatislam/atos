@@ -45,13 +45,13 @@
 @push('css')
 <style type="text/css">
     {{-- You can add dashboard  customizations here --}}
-    /*
+  
     .card-header {
         border-bottom: none;
     }
     .card-title {
         font-weight: 600;
     }
-    */
+   
 </style>
 @endpush

@@ -12,9 +12,6 @@
 
 
 
-
-
-
 @stop
 {{-- Push extra CSS --}}
 @push('css')

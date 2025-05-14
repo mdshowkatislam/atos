@@ -1,5 +1,5 @@
 <?php
-
+namespace App\Console;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
@@ -11,9 +11,8 @@ Artisan::command('inspire', function () {
 
 
 
-Schedule::command('access:sync')->everyMinute();
+// Schedule::command('access:sync')->everyMinute();
 
-// Optional: log to confirm scheduler runs but not running every minute 
 Schedule::call(function () {
     \Log::info('Scheduled task runner hit at ' . now());
 })->everyMinute();
