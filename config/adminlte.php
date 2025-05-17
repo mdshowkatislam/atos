@@ -345,7 +345,7 @@ return [
             'submenu' => [
                 [
                     'text' => 'View Users',
-                    'url' => 'admin/user_management/users',
+                    'url' => 'admin/users',
                 ],
                
                
@@ -356,37 +356,39 @@ return [
             'icon' => 'fas fa-fw fa-share',
             'submenu' => [
                 [
-                    'text' => 'All Databases',
-                    'url' => 'admin/database_list',
+                    'text' => 'database management',
+                    'url' => 'admin/database_management',
                 ],
+             
                 [
-                    'text' => 'level_one',
-                    'url' => '#',
-                    'submenu' => [
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                        ],
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                            'submenu' => [
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                            ],
-                        ],
-                    ],
+                    'text' => 'table_management',
+                    'url' => 'admin/table_management',
                 ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
+
+                //    [
+                //     'text' => 'level_one',
+                //     'url' => '#',
+                //     'submenu' => [
+                //         [
+                //             'text' => 'level_two',
+                //             'url' => '#',
+                //         ],
+                //         [
+                //             'text' => 'level_two',
+                //             'url' => '#',
+                //             'submenu' => [
+                //                 [
+                //                     'text' => 'level_three',
+                //                     'url' => '#',
+                //                 ],
+                //                 [
+                //                     'text' => 'level_three',
+                //                     'url' => '#',
+                //                 ],
+                //             ],
+                //         ],
+                //     ],
+                // ],
             ],
         ],
         // ['header' => 'labels'],

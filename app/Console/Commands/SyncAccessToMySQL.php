@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ScheduledSetting;
 use Illuminate\Console\Command;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use PDO;
 
 class SyncAccessToMySQL extends Command
@@ -17,7 +17,12 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
-        $accessFile = 'C:\ZKTeco\ZKAccess3.5\Access.mdb';
+        //    \Log::info('xxx' );
+        // $accessFile = 'C:\ZKTeco\ZKAccess3.5\Access.mdb';
+
+       $accessFile= ScheduledSetting::value('db_location');
+    
+      
 
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
 
@@ -40,6 +45,7 @@ class SyncAccessToMySQL extends Command
 
                 $lowerTableName = strtolower($table);
                 $sampleRow = $data[0];
+                \Log::info('Sample row from ' . $table . ':', $sampleRow);
 
                 // Create table if it doesn't exist
                 if (!Schema::hasTable($lowerTableName)) {

@@ -10,10 +10,8 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 
-
 // Schedule::command('access:sync')->everyMinute();
 
 Schedule::call(function () {
     \Log::info('Scheduled task runner hit at ' . now());
 })->everyMinute();
-

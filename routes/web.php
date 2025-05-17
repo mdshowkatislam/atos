@@ -5,8 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Backend\DatabaseController;
 
- 
-
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
 Route::get('/access/tables', [AccessController::class, 'listTables'])->name('access.tables');
 Route::get('/access/sql/{table}', [AccessController::class, 'convertToSQL'])->name('access.sql');
@@ -17,30 +15,27 @@ Route::get('/', function() {
 })->name('welcome');
 
 Auth::routes();
-
-
-
 Route::get('/home', [App\Http\Controllers\Backend\HomeController::class, 'index'])->name('home');
-
-// Route::get('admin/settings/databases', function () {
-//     return view('show_all_db');
-// });
-// Route::get('admin/db_management/db_list', function () {
-//     return view('show_all_db');
-// });
-
-Route::get('admin/database_list', [DatabaseController::class, 'index'])->name('admin.database_list');
-Route::get('admin/database/table/{db}', [DatabaseController::class, 'show'])->name('admin.database.table');
-
-Route::get('admin/user_management/users', [UserController::class, 'index'])->name('user_management.users');
-
-Route::prefix('user')->group(function () {
-            Route::get('/', 'UserController@index')->name('user');
-         
-            Route::get('/add', 'UserController@userAdd')->name('user.add');
-            Route::post('/store', 'UserController@userStore')->name('user.store');
-            Route::get('/edit/{id}', 'UserController@userEdit')->name('user.edit');
-            Route::post('/update/{id}', 'UserController@updateUser')->name('user.update');
-            Route::post('/delete', 'UserController@deleteUser')->name('user.delete');
-            Route::get('/reset-password', 'UserController@resetPassword')->name('reset.password');
+// User Management
+Route::prefix('admin')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('user.users');       
+            Route::get('/add', [UserController::class,'userAdd'])->name('user.add');
+            Route::post('/store', [UserController::class,'userStore'])->name('user.store');
+            Route::get('/edit/{id}', [UserController::class,'userEdit'])->name('user.edit');
+            Route::post('/update/{id}', [UserController::class,'updateUser'])->name('user.update');
+            Route::post('/delete', [UserController::class,'deleteUser'])->name('user.delete');
+            Route::get('/reset-password', [UserController::class,'resetPassword'])->name('reset.password');
 });
+
+
+// Database Management
+
+Route::get('admin/database_management', [DatabaseController::class, 'index'])->name('admin.database_management');
+Route::post('admin/update_schedule', [DatabaseController::class, 'updateSchedule'])->name('admin.update_schedule');
+
+// Table Management
+Route::get('admin/table_management', [DatabaseController::class, 'showTable'])->name('admin.table_management');
+
+
+
+

@@ -43,7 +43,7 @@
                         
                         <a class="btn btn-sm btn-success float-right ml-2" href="{{ route('user.add') }}"><i class="fa fa-plus-circle"></i> @lang('User') @lang('Add')</a>
                     
-                        <a class="btn btn-sm btn-success float-right" href="{{ route('user') }}"><i class="fa fa-list"></i>
+                        <a class="btn btn-sm btn-success float-right" href="{{ route('user.users') }}"><i class="fa fa-list"></i>
                             @lang('User') @lang('List')</a>
                     </div>
                     <div class="card-body">

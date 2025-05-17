@@ -28,7 +28,8 @@
                 <div class="col-md-12">
                     <div class="card card-outline card-primary">
                         <div class="card-body d-flex flex-column align-items-center position-relative">
-                            <form action="#"
+                            <form action="{{ route('admin.update_schedule') }}"
+                                  class="d-flex flex-column align-items-center"
                                   method="POST"
                                   enctype="multipart/form-data"
                                   style="width: 100%;">
@@ -36,31 +37,28 @@
                                 @csrf
 
                                 <!-- File input + Sync time in one line -->
-                                <div class="d-flex justify-content-center flex-wrap mb-4 w-100"
+                                <div class="d-flex justify-content-center flex-wrap mb-4 w-100 p-3 rounded"
                                      style="gap: 50px;">
 
                                     <!-- File upload -->
-                                    <div class="d-flex align-items-center"
-                                         style="white-space: nowrap;">
+                                   
                                         <div class="me-3">
                                             <label class="text-primary pt-2 mb-0 mr-2">
-                                                <h5>Please Select Your Database Location</h5>
+                                                <h5>Please Insert Your Database Location Url</h5>
                                             </label>
                                         </div>
                                         <div class="custom-file"
                                              style="max-width: 300px;">
-                                            <input type="file"
-                                                   class="custom-file-input"
+                                            <input type="text" style="width:270px !important;"
+                                                   class="form-control"
                                                    id="customFile"
-                                                   name="database_file">
-                                            <label class="custom-file-label"
-                                                   for="customFile">Choose file</label>
+                                                   name="location" placeholder="Url">
+                                           
                                         </div>
-                                    </div>
+                                 
 
                                     <!-- Sync time -->
-                                    <div class="d-flex align-items-center"
-                                         style="white-space: nowrap;">
+                                
                                         <div class="me-3">
                                             <label class="text-primary pt-2 mr-2">
                                                 <h5>Please Insert Your Sync Time</h5>
@@ -68,22 +66,22 @@
                                         </div>
                                         <div class="form-group mb-4"
                                              style="min-width: 150px;">
-                                            <select class="form-control"
+                                          <select class="form-control" 
                                                     id="syncTimeId"
-                                                    name="sync_time">
-                                                <option>Every Minute </option>
-                                                <option>Every Thirty Minutes</option>
-                                                <option>Hourly</option>
-                                                <option>Every 2 hours</option>
-                                                <option>Daily </option>
-                                                <option>Daily at (13:00pm) </option>
-                                                <option>Tow Time Daily ( 1, 13 )</option>
-                                                <option>Between('9:00'>>>'17:00')</option>
+                                                    name="syncTimeName">
+                                                <option value="1">Every Minute </option>
+                                                <option value="2">Every Thirty Minutes</option>
+                                                <option value="3">Hourly</option>
+                                                <option value="4">Every 2 hours</option>
+                                                <option value="5">Daily </option>
+                                                <option value="6">Daily at (13:00pm) </option>
+                                                <option value="7">Tow Time Daily ( 1, 13 )</option>
+                                                <option value="8">Between('9:00'>>>'17:00')</option>
                                                
                                               
                                             </select>
                                         </div>
-                                    </div>
+                                 
 
                                 </div>
 
