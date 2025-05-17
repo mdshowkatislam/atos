@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\ScheduledSetting;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 // use Illuminate\Support\Facades\DB;
 
@@ -39,15 +40,14 @@ class DatabaseController extends Controller
 
         return view('backend.database.index', compact('databaseNames'));
     }
-      public function updateSchedule(Request $request)
+
+    public function updateSchedule(Request $request)
     {
-       
-      
-            $validated = $request->validate([
-                'location' => 'nullable|string',
-                'syncTimeName' => 'required|in:1,2,3,4,5,6,7',
-            ]);
-        
+        $validated = $request->validate([
+            'location' => 'nullable|string',
+            'syncTimeName' => 'required|in:1,2,3,4,5,6,7',
+        ]);
+
         ScheduledSetting::updateOrCreate(
             ['key' => 'sync_time'],
             [
@@ -83,9 +83,22 @@ class DatabaseController extends Controller
 
     public function showTable()
     {
-        $data = \DB::select('userinfo',checkinout)->get();
+        try {
+            
+            // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+
+            $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
+            
+            AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+     
+
+            
+
+        } catch (QueryException $e) {
+            dd($e, $e->getMessage());
+            return redirect()->back()->with('error', 'Could not fetch columns.(From Controller)');
+        }
+        // dd($data);
         return view('backend.database.table', compact('data'));
     }
-
-  
 }
