@@ -59,7 +59,7 @@ class DatabaseController extends Controller
         return redirect()->back()->with('success', 'Schedule and DB location updated!');
     }
 
-    public function show($db)
+    public function showColumn($table)
     {
         try {
             $allTables = [];
@@ -84,21 +84,50 @@ class DatabaseController extends Controller
     public function showTable()
     {
         try {
-            
             // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
 
             $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
             
             AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
-     
+            $result = [];
 
-            
-
+            foreach ($data as $table) {
+                $columns = \DB::select("SHOW COLUMNS FROM `$table->TABLE_NAME`");
+                $result[] = [
+                    'name' => $table->TABLE_NAME,
+                    'columns' => array_map(fn($col) => $col->Field, $columns),
+                ];
+            }
         } catch (QueryException $e) {
             dd($e, $e->getMessage());
             return redirect()->back()->with('error', 'Could not fetch columns.(From Controller)');
         }
+
+        // dd($result);
+        // dd($result[0]['name']);
+
+        return view('backend.database.table', compact('result'));
+    }
+
+    public function showSelected(Request $request)
+    {
+        $table = $request->input('table');
+        $columns = $request->input('columns')[$table] ?? [];
+        array_unshift($columns, 'id');
+
+        if (empty($columns)) {
+            return redirect()->back()->withErrors('Select at least one column.');
+        }
+
+        $data = \DB::table($table)->select($columns)->limit(10)->get();
         // dd($data);
-        return view('backend.database.table', compact('data'));
+
+        return view('selected_columns_view', compact('table', 'columns', 'data'));
+    }
+    public function sendSelected(Request $request)
+    {
+       dd('hi');
+
+        return view('selected_columns_view', compact('table', 'columns', 'data'));
     }
 }

@@ -35,6 +35,11 @@ Route::post('admin/update_schedule', [DatabaseController::class, 'updateSchedule
 
 // Table Management
 Route::get('admin/table_management', [DatabaseController::class, 'showTable'])->name('admin.table_management');
+Route::get('admin/table/column/{table}', [DatabaseController::class, 'showColumn'])->name('admin.table.column');
+
+Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSelected'])->name('admin.table.showSelected');
+Route::get('admin/table/send', [DatabaseController::class, 'sendSelected'])->name('admin.table.send');
+
 
 
 

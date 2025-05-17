@@ -33,7 +33,7 @@
         </a>
     </strong>
 @stop
-{{-- Add common Javascript/Jquery code --}}
+
 @push('js')
 <script>
     $(document).ready(function() {

@@ -41,47 +41,51 @@
                                      style="gap: 50px;">
 
                                     <!-- File upload -->
-                                   
-                                        <div class="me-3">
-                                            <label class="text-primary pt-2 mb-0 mr-2">
-                                                <h5>Please Insert Your Database Location Url</h5>
-                                            </label>
-                                        </div>
-                                        <div class="custom-file"
-                                             style="max-width: 300px;">
-                                            <input type="text" style="width:270px !important;"
-                                                   class="form-control"
-                                                   id="customFile"
-                                                   name="location" placeholder="Url">
-                                           
-                                        </div>
-                                 
+
+                                    <div class="me-3">
+                                        <label class="text-primary pt-2 mb-0 mr-2">
+                                            <h5>Please Insert Your Database Location Url</h5>
+                                        </label>
+                                    </div>
+                                    <div class="custom-file"
+                                         style="max-width: 300px;">
+                                        <input type="text"
+                                               style="width:270px !important;"
+                                               class="form-control"
+                                               id="customFile"
+                                               pattern='^(?!.*(::|"|,|;)).*$'
+                                               title='Characters ::, ", , and ; are not allowed'
+                                               name="location"
+                                               placeholder="Url">
+
+                                    </div>
+
 
                                     <!-- Sync time -->
-                                
-                                        <div class="me-3">
-                                            <label class="text-primary pt-2 mr-2">
-                                                <h5>Please Insert Your Sync Time</h5>
-                                            </label>
-                                        </div>
-                                        <div class="form-group mb-4"
-                                             style="min-width: 150px;">
-                                          <select class="form-control" 
-                                                    id="syncTimeId"
-                                                    name="syncTimeName">
-                                                <option value="1">Every Minute </option>
-                                                <option value="2">Every Thirty Minutes</option>
-                                                <option value="3">Hourly</option>
-                                                <option value="4">Every 2 hours</option>
-                                                <option value="5">Daily </option>
-                                                <option value="6">Daily at (13:00pm) </option>
-                                                <option value="7">Tow Time Daily ( 1, 13 )</option>
-                                                <option value="8">Between('9:00'>>>'17:00')</option>
-                                               
-                                              
-                                            </select>
-                                        </div>
-                                 
+
+                                    <div class="me-3">
+                                        <label class="text-primary pt-2 mr-2">
+                                            <h5>Please Insert Your Sync Time</h5>
+                                        </label>
+                                    </div>
+                                    <div class="form-group mb-4"
+                                         style="min-width: 150px;">
+                                        <select class="form-control"
+                                                id="syncTimeId"
+                                                name="syncTimeName">
+                                            <option value="1">Every Minute </option>
+                                            <option value="2">Every Thirty Minutes</option>
+                                            <option value="3">Hourly</option>
+                                            <option value="4">Every 2 hours</option>
+                                            <option value="5">Daily </option>
+                                            <option value="6">Daily at (13:00pm) </option>
+                                            <option value="7">Tow Time Daily ( 1, 13 )</option>
+                                            <option value="8">Between('9:00'>>>'17:00')</option>
+
+
+                                        </select>
+                                    </div>
+
 
                                 </div>
 
@@ -98,43 +102,43 @@
 
             </div>
         </div>
-        </div>
+    </div>
 
 
-    @stop
+@stop
 
-    {{-- Push extra CSS --}}
-    @push('css')
-        <style>
-            #save-btn {
-                opacity: 0.5;
-                background-color: #007bff;
-                /* Original Bootstrap primary */
-                color: white;
-                /* Original text color */
-                transition: background-color 0.3s, color 0.3s, opacity 0.3s;
-            }
+{{-- Push extra CSS --}}
+@push('css')
+    <style>
+        #save-btn {
+            opacity: 0.5;
+            background-color: #007bff;
+            /* Original Bootstrap primary */
+            color: white;
+            /* Original text color */
+            transition: background-color 0.3s, color 0.3s, opacity 0.3s;
+        }
 
-            #save-btn:hover {
-                background-color: #28a745;
-                /* New background color on hover (green) */
-                color: yellow;
-                /* New text color on hover */
-                opacity: 1;
-                /* Fully visible on hover */
-            }
-        </style>
-    @endpush
+        #save-btn:hover {
+            background-color: #28a745;
+            /* New background color on hover (green) */
+            color: yellow;
+            /* New text color on hover */
+            opacity: 1;
+            /* Fully visible on hover */
+        }
+    </style>
+@endpush
 
-    {{-- Push extra scripts --}}
-    @push('js')
-        <script>
-            $(document).ready(function() {
+{{-- Push extra scripts --}}
+@push('js')
+    <script>
+        $(document).ready(function() {
 
-                $(".custom-file-input").on("change", function() {
-                    var fileName = $(this).val().split("\\").pop();
-                    $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-                });
+            $(".custom-file-input").on("change", function() {
+                var fileName = $(this).val().split("\\").pop();
+                $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
             });
-        </script>
-    @endpush
+        });
+    </script>
+@endpush
