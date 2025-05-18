@@ -102,6 +102,8 @@ class SyncAccessToMySQL extends Command
                                 ['LOGID' => $row['LOGID']],
                                 $row
                             );
+
+                            
                         } catch (\Exception $e) {
                             $this->error('Insert failed for USERINFO: ' . $e->getMessage());
                             $this->error('Data: ' . json_encode($row));

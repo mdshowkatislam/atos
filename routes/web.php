@@ -1,9 +1,10 @@
 <?php
-
+use Illuminate\Http\Request; 
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Backend\DatabaseController;
+use App\Jobs\PushSelectedColumn;
 
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
 Route::get('/access/tables', [AccessController::class, 'listTables'])->name('access.tables');
@@ -38,9 +39,21 @@ Route::get('admin/table_management', [DatabaseController::class, 'showTable'])->
 Route::get('admin/table/column/{table}', [DatabaseController::class, 'showColumn'])->name('admin.table.column');
 
 Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSelected'])->name('admin.table.showSelected');
-Route::get('admin/table/send', [DatabaseController::class, 'sendSelected'])->name('admin.table.send');
 
 
+Route::post('admin/table/send', function (Request $request) {
+
+    $table   = $request->string('table'); 
+    $columns = $request->array('columns');  
+    // $columns = $request->input('columns', []);   
+    
+    // optional: store the request, show a toast, whatever…
+
+    PushSelectedColumn::dispatch($table, $columns);
+
+    // return response()->json(['queued' => true]);
+    return back()->with('queued', true);
+})->name('admin.table.send');
 
 
 

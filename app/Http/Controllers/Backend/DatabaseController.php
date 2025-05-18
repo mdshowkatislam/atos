@@ -112,22 +112,20 @@ class DatabaseController extends Controller
     public function showSelected(Request $request)
     {
         $table = $request->input('table');
-        $columns = $request->input('columns')[$table] ?? [];
+        $columns = $request->input('columns') ?? [];
         array_unshift($columns, 'id');
-
         if (empty($columns)) {
             return redirect()->back()->withErrors('Select at least one column.');
         }
 
         $data = \DB::table($table)->select($columns)->limit(10)->get();
-        // dd($data);
 
         return view('selected_columns_view', compact('table', 'columns', 'data'));
     }
+
     public function sendSelected(Request $request)
     {
-       dd('hi');
-
-        return view('selected_columns_view', compact('table', 'columns', 'data'));
+        dd('hi');
+        return redirect()->back()->with('success', 'Selected columns will be sent in every 3 minuts!');
     }
 }
