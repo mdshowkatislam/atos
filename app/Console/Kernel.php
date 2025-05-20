@@ -1,25 +1,21 @@
 <?php
 
 namespace App\Console;
-
 use App\Console\Commands\SyncAccessToMySQL;
 use App\Models\ScheduledSetting;
 use Illuminate\Console\Scheduling\Schedule;
 use App\Jobs\PushSelectedColumn;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-
 class Kernel extends ConsoleKernel
 {
     protected $commands = [
         SyncAccessToMySQL::class,
     ];
-
     protected function commands()
     {
         $this->load(__DIR__ . '/Commands');
         require base_path('routes/console.php');
     }
-
     protected function schedule(Schedule $schedule): void
     {
         $syncMethodMap = [
@@ -45,9 +41,7 @@ class Kernel extends ConsoleKernel
         } else {
             $schedule->command('access:sync')->everyMinute();
         }
-            $schedule
-            ->job(new PushSelectedColumn('orders', ['id', 'total']))
-            ->everyThreeMinutes();
+           
 
         // Optional logging task
         $schedule->call(function () {

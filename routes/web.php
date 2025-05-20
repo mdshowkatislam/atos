@@ -50,9 +50,10 @@ Route::post('admin/table/send', function (Request $request) {
     // optional: store the request, show a toast, whatever…
 
     PushSelectedColumn::dispatch($table, $columns);
-
+  
     // return response()->json(['queued' => true]);
     return back()->with('queued', true);
+   
 })->name('admin.table.send');
 
 

@@ -106,10 +106,13 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($result as $key => $table)
+                                    
+                                        {{-- ───────────── single form per row ───────────── --}}
                                         <tr>
                                             {{-- ───────────── single form per row ───────────── --}}
-                                            <form id="row_{{ $key }}"
-                                                  method="POST">
+                                            {{-- <form id="row_{{ $key }}"
+                                                  method="POST"> --}}
+                                            <form >
                                                 @csrf
 
                                                 {{-- table name cell --}}
@@ -125,7 +128,7 @@
                                                     @foreach ($table['columns'] as $column)
                                                         @continue($column === 'id')
                                                         <div class="form-check item">
-                                                            <input class="form-check-input"
+                                                            <input class="form-check-input" checked
                                                                    type="checkbox"
                                                                    name="columns[]"
                                                                    value="{{ $column }}"
@@ -140,16 +143,27 @@
 
                                                 {{-- buttons cell --}}
                                                 <td class="align-middle">
-                                                    <button type="submit"
+                                                    {{-- <button type="submit"
                                                             class="btn btn-sm btn-primary w-100 mb-2"
                                                             formmethod="GET"
                                                             formaction="{{ route('admin.table.showSelected') }}">
                                                         View Data
+                                                    </button> --}}
+                                                    <button type="text"
+                                                            class="btn btn-sm btn-primary w-100 mb-2"
+                                                            formmethod="GET"
+                                                            formaction="#">
+                                                        View Data
                                                     </button>
 
-                                                    <button type="submit"
+                                                    {{-- <button type="submit"
                                                             class="btn btn-sm btn-warning w-100"
                                                             formaction="{{ route('admin.table.send') }}">
+                                                        Send Selected
+                                                    </button> --}}
+                                                    <button type="text"
+                                                            class="btn btn-sm btn-warning w-100"
+                                                            formaction="#">
                                                         Send Selected
                                                     </button>
                                                 </td>

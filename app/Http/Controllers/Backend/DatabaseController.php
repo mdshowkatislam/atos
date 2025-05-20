@@ -86,9 +86,12 @@ class DatabaseController extends Controller
         try {
             // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
 
-            $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
-            
-            AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+            $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?
+            AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);
+            // $data = \DB::select(
+            //     'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',['atos', 'checkinout']
+            // );
+
             $result = [];
 
             foreach ($data as $table) {
@@ -102,9 +105,23 @@ class DatabaseController extends Controller
             dd($e, $e->getMessage());
             return redirect()->back()->with('error', 'Could not fetch columns.(From Controller)');
         }
+        $importantColumns = config('selected_column');
+        $wantedCols = $importantColumns['columns'];
+        //  dd( $wantedCols);
 
-        // dd($result);
-        // dd($result[0]['name']);
+        foreach ($result as &$table) {
+            $tableName = $table['name'];
+
+            if (isset($wantedCols[$tableName])) {
+                $table['columns'] = array_values(
+                    array_intersect(
+                        $table['columns'],
+                        $wantedCols[$tableName]
+                    )
+                );
+            }
+        }
+        unset($table);
 
         return view('backend.database.table', compact('result'));
     }
@@ -125,7 +142,6 @@ class DatabaseController extends Controller
 
     public function sendSelected(Request $request)
     {
-        dd('hi');
         return redirect()->back()->with('success', 'Selected columns will be sent in every 3 minuts!');
     }
 }
