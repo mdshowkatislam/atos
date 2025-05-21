@@ -49,11 +49,11 @@ class UserController extends Controller
             'password' => [
                 'required',
                 'confirmed',
-                Password::min(8) // Minimum length of 6 characters
-                    ->letters()    // Requires at least one letter
-                    ->mixedCase()  // Requires mixed case (uppercase and lowercase)
-                    ->numbers()    // Requires at least one number
-                    ->symbols()    // Requires at least one special character
+                Password::min(8) 
+                    ->letters()   
+                    ->mixedCase() 
+                    ->numbers()    
+                    ->symbols()   
             ],
             'role_id' => 'required',
             'image' => 'image|mimes:jpg,jpeg,png'
@@ -143,7 +143,7 @@ class UserController extends Controller
     }
 
     public function deleteUser(Request $request)
-    {
+    { 
         $user = User::find($request->id);
         $user->delete();
         return redirect()->route('user')->with('success', 'Data Deleted successfully');

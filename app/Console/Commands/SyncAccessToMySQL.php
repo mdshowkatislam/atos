@@ -45,7 +45,7 @@ class SyncAccessToMySQL extends Command
                 $sampleRow = $data[0];
                 // \Log::info('Sample row from ' . $table . ':', $sampleRow);
 
-                // Create table if it doesn't exist
+     
                 if (!Schema::hasTable($lowerTableName)) {
                     Schema::create($lowerTableName, function (Blueprint $table) use ($sampleRow) {
                         $table->increments('id');
@@ -137,7 +137,7 @@ class SyncAccessToMySQL extends Command
                                 'status' => $response->status(),
                                 'body' => $response->body(),
                             ]);
-                            // You can log or use it as needed
+                         
                             \Log::info('Formatted studentData:', $studentData);
                         } catch (\Exception $e) {
                             $this->error('Insert failed for USERINFO: ' . $e->getMessage());

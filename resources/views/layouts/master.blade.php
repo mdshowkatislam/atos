@@ -37,11 +37,11 @@
 @push('js')
 <script>
     $(document).ready(function() {
-        // Add your common script logic here...
+    
     });
 </script>
 @endpush
-{{-- Add common CSS customizations --}}
+
 @push('css')
 <style type="text/css">
     {{-- You can add dashboard  customizations here --}}

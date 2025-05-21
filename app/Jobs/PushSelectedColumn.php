@@ -14,21 +14,19 @@ class PushSelectedColumn implements ShouldQueue
     use Dispatchable, Queueable;
 
     public function __construct(
-        public string $table,  // e.g. "orders"
-        public array $columns  // e.g. ["id","total"]
+        public string $table,  
+        public array $columns  
     ) {}
 
     public function handle(): void
     {
-        // --- very important: validate/whitelist to avoid SQL‑inject --------
+      
         $allowedTables = config('snapshot.tables');
         $allowedColumns = config('snapshot.columns')[$this->table] ?? [];
 
         abort_unless(in_array($this->table, $allowedTables), 400);
         abort_unless(collect($this->columns)
             ->every(fn($c) => in_array($c, $allowedColumns)), 400);
-        // ------------------------------------------------------------------
-
         $payload = DB::table($this->table)
             ->select($this->columns)
             ->get()
