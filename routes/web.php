@@ -41,19 +41,19 @@ Route::get('admin/table/column/{table}', [DatabaseController::class, 'showColumn
 Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSelected'])->name('admin.table.showSelected');
 
 
-Route::post('admin/table/send', function (Request $request) {
+// Route::post('admin/table/send', function (Request $request) {
 
-    $table   = $request->string('table'); 
-    $columns = $request->array('columns');  
-    // $columns = $request->input('columns', []);   
+//     $table   = $request->string('table'); 
+//     $columns = $request->array('columns');  
+//     // $columns = $request->input('columns', []);   
     
-    // optional: store the request, show a toast, whatever…
+//     // optional: store the request, show a toast, whatever…
 
-    PushSelectedColumn::dispatch($table, $columns);
+//     PushSelectedColumn::dispatch($table, $columns);
 
-    // return response()->json(['queued' => true]);
-    return back()->with('queued', true);
-})->name('admin.table.send');
+//     // return response()->json(['queued' => true]);
+//     return back()->with('queued', true);
+// })->name('admin.table.send');
 
 
 

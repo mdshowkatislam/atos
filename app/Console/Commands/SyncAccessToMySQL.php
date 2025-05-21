@@ -6,6 +6,7 @@ use App\Models\ScheduledSetting;
 use Illuminate\Console\Command;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use PDO;
 
@@ -17,12 +18,9 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
-        //    \Log::info('xxx' );
         // $accessFile = 'C:\ZKTeco\ZKAccess3.5\Access.mdb';
 
-       $accessFile= ScheduledSetting::value('db_location');
-    
-      
+        $accessFile = ScheduledSetting::value('db_location');
 
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
 
@@ -45,7 +43,7 @@ class SyncAccessToMySQL extends Command
 
                 $lowerTableName = strtolower($table);
                 $sampleRow = $data[0];
-                \Log::info('Sample row from ' . $table . ':', $sampleRow);
+                // \Log::info('Sample row from ' . $table . ':', $sampleRow);
 
                 // Create table if it doesn't exist
                 if (!Schema::hasTable($lowerTableName)) {
@@ -103,7 +101,37 @@ class SyncAccessToMySQL extends Command
                                 $row
                             );
 
-                            
+                            $badgenumber = DB::table('userinfo')->where('USERID', $row['USERID'])->value('Badgenumber');
+
+                            if ($badgenumber) {
+                                $studentData = [
+                                    [
+                                        'id' => $badgenumber,  // Changed from 'uid' to 'id'
+                                        'machine_id' => $row['MachineId'],
+                                        'time' => $row['CHECKTIME'],
+                                    ]
+                                ];
+
+                                // Proceed with API call
+                            } else {
+                                \Log::warning('No Badgenumber found for USERID: ' . $row['USERID']);
+                            }
+
+                            $response = Http::withHeaders([
+                                'Content-Type' => 'application/json',
+                                'accept' => 'application/json',
+                            ])
+                                ->withOptions([
+                                    'verify' => false
+                                ])
+                                ->post(config('api_url.endpoint'), ['studentData' => $studentData]);
+
+                            \Log::info('API Response:', [
+                                'status' => $response->status(),
+                                'body' => $response->body(),
+                            ]);
+                            // You can log or use it as needed
+                            \Log::info('Formatted studentData:', $studentData);
                         } catch (\Exception $e) {
                             $this->error('Insert failed for USERINFO: ' . $e->getMessage());
                             $this->error('Data: ' . json_encode($row));
@@ -118,7 +146,6 @@ class SyncAccessToMySQL extends Command
         }
     }
 
-    // Helper method to detect datetime strings
     protected function isDateTime($value)
     {
         if (!is_string($value))

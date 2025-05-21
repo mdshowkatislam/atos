@@ -108,8 +108,9 @@
                                     @foreach ($result as $key => $table)
                                         <tr>
                                             {{-- ───────────── single form per row ───────────── --}}
-                                            <form id="row_{{ $key }}"
-                                                  method="POST">
+                                            <form >
+                                            {{-- <form id="row_{{ $key }}"
+                                                  method="POST"> --}}
                                                 @csrf
 
                                                 {{-- table name cell --}}
@@ -140,6 +141,7 @@
 
                                                 {{-- buttons cell --}}
                                                 <td class="align-middle">
+                                                    
                                                     <button type="submit"
                                                             class="btn btn-sm btn-primary w-100 mb-2"
                                                             formmethod="GET"
@@ -149,9 +151,14 @@
 
                                                     <button type="submit"
                                                             class="btn btn-sm btn-warning w-100"
-                                                            formaction="{{ route('admin.table.send') }}">
+                                                            formaction="#">
                                                         Send Selected
                                                     </button>
+                                                    {{-- <button type="submit"
+                                                            class="btn btn-sm btn-warning w-100"
+                                                            formaction="{{ route('admin.table.send') }}">
+                                                        Send Selected
+                                                    </button> --}}
                                                 </td>
                                             </form>
                                         </tr>
