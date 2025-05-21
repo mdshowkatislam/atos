@@ -4,6 +4,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Backend\DatabaseController;
+use App\Http\Controllers\Backend\ShitController;
 use App\Jobs\PushSelectedColumn;
 
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
@@ -40,8 +41,8 @@ Route::get('admin/table/column/{table}', [DatabaseController::class, 'showColumn
 
 Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSelected'])->name('admin.table.showSelected');
 
-
-// Route::post('admin/table/send', function (Request $request) {
+// important route for 2nd job
+// Route::post('admin/table/send', function (Request $request) { 
 
 //     $table   = $request->string('table'); 
 //     $columns = $request->array('columns');  
@@ -54,6 +55,10 @@ Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSele
 //     // return response()->json(['queued' => true]);
 //     return back()->with('queued', true);
 // })->name('admin.table.send');
+
+Route::get('admin/shift_management', [ShitController::class, 'shiftManage'])->name('admin.shift_management');
+Route::post('admin/shift/add', [ShitController::class, 'shiftAdd'])->name('admin.shift.add');
+
 
 
 

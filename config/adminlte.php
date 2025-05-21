@@ -364,6 +364,10 @@ return [
                     'text' => 'table_management',
                     'url' => 'admin/table_management',
                 ],
+                [
+                    'text' => 'Shift Management',
+                    'url' => 'admin/shift_management',
+                ],
 
                 //    [
                 //     'text' => 'level_one',
