@@ -102,15 +102,21 @@ class SyncAccessToMySQL extends Command
                             );
 
                             $badgenumber = DB::table('userinfo')->where('USERID', $row['USERID'])->value('Badgenumber');
+                           
 
                             if ($badgenumber) {
+
                                 $studentData = [
                                     [
                                         'id' => $badgenumber,  // Changed from 'uid' to 'id'
                                         'machine_id' => $row['MachineId'],
-                                        'time' => $row['CHECKTIME'],
+                                        'in_time' => $row['CHECKTIME'],
+                                        'out_time' => $row['CHECKTIME'],
                                     ]
                                 ];
+
+                                \Log::info('Student Data:', $studentData);  
+
 
                                 // Proceed with API call
                             } else {
@@ -125,6 +131,7 @@ class SyncAccessToMySQL extends Command
                                     'verify' => false
                                 ])
                                 ->post(config('api_url.endpoint'), ['studentData' => $studentData]);
+                                 // please check the endpoint in env
 
                             \Log::info('API Response:', [
                                 'status' => $response->status(),
