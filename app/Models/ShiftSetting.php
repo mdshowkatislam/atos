@@ -8,7 +8,7 @@ class ShiftSetting extends Model
 {
     protected $table = "shift_settings";
     protected $fillable = [
-        'start_time',
-        'end_time',
+        'in_time',
+        'out_time',
     ];  
 }

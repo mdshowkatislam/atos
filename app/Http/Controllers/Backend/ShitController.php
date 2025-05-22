@@ -3,29 +3,23 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\ShiftSetting;
 use Illuminate\Http\Request;
-use App\Models\ShiftSetting; 
 
 class ShitController extends Controller
 {
     public function shiftManage()
     {
-        $databases = \DB::select("
-        SELECT DISTINCT TABLE_SCHEMA
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_NAME = 'checkinout'
-    ");
+            $shift = ShiftSetting::first();
+            if($shift){
+                 return view('backend.shift_management.index', compact('shift'));
+            }
 
-        $databaseNames = array_map(function ($db) {
-            return $db->TABLE_SCHEMA;
-        }, $databases);
-
-        return view('backend.shift_management.index', compact('databaseNames'));
+        return view('backend.shift_management.index');
     }
 
     public function shiftAdd(Request $request)
     {
-    
         $validated = $request->validate([
             'start_time' => ['required', 'date_format:H:i', 'before:end_time'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
@@ -36,20 +30,20 @@ class ShitController extends Controller
             'end_time.date_format' => 'End time must be in HH:MM format.',
         ]);
 
-        
-      $shift = ShiftSetting::first();
+        $shift = ShiftSetting::first();
 
-if ($shift) {
-    $shift->update([
-        'start_time' => $validated['start_time'],
-        'end_time' => $validated['end_time']
-    ]);
-} else {
-    ShiftSetting::create([
-        'start_time' => $validated['start_time'],
-        'end_time' => $validated['end_time']
-    ]);
-}
+        if ($shift) {
+          
+            $shift->update([
+                'start_time' => $validated['start_time'],
+                'end_time' => $validated['end_time']
+            ]);
+        } else {
+            ShiftSetting::create([
+                'start_time' => $validated['start_time'],
+                'end_time' => $validated['end_time']
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Time Shit updated!');
     }
