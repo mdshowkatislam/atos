@@ -7,6 +7,7 @@ use App\Http\Controllers\Backend\DatabaseController;
 use App\Http\Controllers\Backend\ShitController;
 use App\Jobs\PushSelectedColumn;
 
+
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
 Route::get('/access/tables', [AccessController::class, 'listTables'])->name('access.tables');
 Route::get('/access/sql/{table}', [AccessController::class, 'convertToSQL'])->name('access.sql');
