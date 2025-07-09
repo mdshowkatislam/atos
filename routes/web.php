@@ -5,6 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Backend\DatabaseController;
 use App\Http\Controllers\Backend\ShitController;
+use App\Http\Controllers\Backend\AttendanceModule\ShiftController;
+use App\Http\Controllers\Backend\AttendanceModule\flaxibleTimeController;
+use App\Http\Controllers\Backend\AttendanceModule\GroupController;
+use App\Http\Controllers\Backend\AttendanceModule\SpecialWorkdayController;
 use App\Jobs\PushSelectedColumn;
 
 
@@ -57,9 +61,26 @@ Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSele
 //     return back()->with('queued', true);
 // })->name('admin.table.send');
 
-Route::get('admin/shift_management', [ShitController::class, 'shiftManage'])->name('admin.shift_management');
-Route::post('admin/shift/add', [ShitController::class, 'shiftAdd'])->name('admin.shift.add');
 
+// ===============   Attendance Management System (api based)   =================
 
+// Route::get('admin/shift_manage', [ShiftController::class, 'shiftManage'])->name('admin.shift_manage');
+// Route::post('admin/shift/add', [ShiftController::class, 'shiftAdd'])->name('admin.sh
+// ift.add');
 
-
+Route::prefix('admin/shift_manage')->group(function () {
+    Route::get('/', [ShiftController::class, 'index'])->name('shift.list');
+    Route::get('/add', [ShiftController::class, 'create'])->name('shift.add');
+    Route::post('/store', [ShiftController::class, 'store'])->name('shift.store');
+    Route::get('/{id}/edit', [ShiftController::class, 'edit'])->name('shift.edit');
+    Route::put('/{id}', [ShiftController::class, 'update'])->name('shift.update');
+    Route::delete('/{id}', [ShiftController::class, 'destroy'])->name('shift.destroy');
+});
+Route::prefix('admin/group_manage')->group(function () {
+    Route::get('/', [GroupController::class, 'index'])->name('group.list');
+    Route::get('/add', [GroupController::class, 'create'])->name('group.add');
+    Route::post('/store', [GroupController::class, 'store'])->name('group.store');
+    Route::get('/{id}/edit', [GroupController::class, 'edit'])->name('group.edit');
+    Route::put('/{id}', [GroupController::class, 'update'])->name('group.update');
+    Route::delete('/{id}', [GroupController::class, 'destroy'])->name('group.destroy');
+});

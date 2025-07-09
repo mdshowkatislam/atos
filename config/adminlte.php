@@ -364,9 +364,55 @@ return [
                     'text' => 'table_management',
                     'url' => 'admin/table_management',
                 ],
+               
+
+                //    [
+                //     'text' => 'level_one',
+                //     'url' => '#',
+                //     'submenu' => [
+                //         [
+                //             'text' => 'level_two',
+                //             'url' => '#',
+                //         ],
+                //         [
+                //             'text' => 'level_two',
+                //             'url' => '#',
+                //             'submenu' => [
+                //                 [
+                //                     'text' => 'level_three',
+                //                     'url' => '#',
+                //                 ],
+                //                 [
+                //                     'text' => 'level_three',
+                //                     'url' => '#',
+                //                 ],
+                //             ],
+                //         ],
+                //     ],
+                // ],
+            ],
+        ],
+        [
+            'text' => 'Attendence Managment',
+            'icon' => 'fas fa-fw fa-share',
+            'submenu' => [
+                
                 [
-                    'text' => 'Shift Management',
-                    'url' => 'admin/shift_management',
+                    'text' => 'Shift Manage',
+                    'route' => 'shift.list',
+                ],
+                [
+                    'text' => 'Group manage',
+                      'route' => 'group.list',
+                ],
+             
+                [
+                    'text' => 'Flaxible time manage',
+                      'route' => 'shift.list',
+                ],
+                [
+                    'text' => 'Special Workday manage',
+                      'route' => 'shift.list',
                 ],
 
                 //    [

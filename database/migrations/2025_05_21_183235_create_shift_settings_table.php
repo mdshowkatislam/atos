@@ -13,8 +13,11 @@ return new class extends Migration
     {
         Schema::create('shift_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('in_time')->nullable();
-            $table->string('out_time')->nullable(); 
+            $table->string('shift_name')->nullable();
+            $table->string('start_time')->nullable();
+            $table->string('end_time')->nullable(); 
+            $table->string('description')->nullable(); 
+            $table->tinyInteger('status')->default(1)->nullable(); 
             $table->timestamps();
         });
     }
