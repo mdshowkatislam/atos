@@ -15,3 +15,4 @@ Artisan::command('inspire', function () {
 Schedule::call(function () {
     \Log::info('Scheduled task runner hit at ' . now());
 })->everyMinute();
+

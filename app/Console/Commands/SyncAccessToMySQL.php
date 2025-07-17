@@ -19,6 +19,8 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
+
+     
         $accessFile = ScheduledSetting::value('db_location');
 
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
@@ -80,6 +82,7 @@ class SyncAccessToMySQL extends Command
                         if ($lowerTableName === 'userinfo') {
                             DB::table($lowerTableName)->updateOrInsert(
                                 ['Badgenumber' => $row['Badgenumber']],
+                                // ['USERID' => $row['USERID']],
                                 $row
                             );
                         } elseif ($lowerTableName === 'checkinout') {
@@ -107,7 +110,7 @@ class SyncAccessToMySQL extends Command
                     DB::raw('MAX(c.CHECKTIME) as out_time'),
                     'c.MachineId'
                 )
-                ->whereDate('c.CHECKTIME', $today) // optional: filter only today's data
+                // ->whereDate('c.CHECKTIME', $today)
                 ->groupBy('u.Badgenumber', 'c.MachineId')
                 ->get();
 
@@ -124,7 +127,6 @@ class SyncAccessToMySQL extends Command
 
             \Log::info('Formatted studentData:', $studentData);
 
-          
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'accept' => 'application/json',
