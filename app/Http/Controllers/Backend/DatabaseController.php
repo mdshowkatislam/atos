@@ -36,25 +36,45 @@ class DatabaseController extends Controller
         // }
 
         // // Debug output
-        // dd($allTables);
+        // dd($databases);
 
         return view('backend.database.index', compact('databaseNames'));
     }
 
     public function updateSchedule(Request $request)
     {
-        $validated = $request->validate([
-            'location' => 'nullable|string',
-            'syncTimeName' => 'required|in:1,2,3,4,5,6,7',
-        ]);
+      
+        $isApi = $request->route() && str_starts_with($request->route()->getPrefix(), 'api');
 
-        ScheduledSetting::updateOrCreate(
-            ['key' => 'sync_time'],
-            [
-                'value' => $validated['syncTimeName'],
-                'db_location' => $validated['location'] ?? null,
-            ]
-        );
+        if ($isApi) {
+            // Validate inside 'dbdata' key
+            $validated = validator($request->input('dbdata', []), [
+                'location' => 'nullable|string',
+                'syncTimeName' => 'required|in:1,2,3,4,5,6,7',
+            ])->validate();
+
+            ScheduledSetting::updateOrCreate(
+                ['key' => 'sync_time'],
+                [
+                    'value' => $validated['syncTimeName'],
+                    'db_location' => $validated['location'] ?? null,
+                ]
+            );
+        } else {
+            // Validate flat keys directly
+            $validated = $request->validate([
+                'location' => 'nullable|string',
+                'syncTimeName' => 'required|in:1,2,3,4,5,6,7',
+            ]);
+
+            ScheduledSetting::updateOrCreate(
+                ['key' => 'sync_time'],
+                [
+                    'value' => $validated['syncTimeName'],
+                    'db_location' => $validated['location'] ?? null,
+                ]
+            );
+        }
 
         return redirect()->back()->with('success', 'Schedule and DB location updated!');
     }
