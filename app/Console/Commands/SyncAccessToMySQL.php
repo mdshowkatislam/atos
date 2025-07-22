@@ -19,10 +19,9 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
-
-     
         $accessFile = ScheduledSetting::value('db_location');
 
+        // Correct ODBC DSN path format
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
 
         try {
@@ -45,12 +44,14 @@ class SyncAccessToMySQL extends Command
                 $lowerTableName = strtolower($table);
                 $sampleRow = $data[0];
 
+                // Create table dynamically
                 if (!Schema::hasTable($lowerTableName)) {
                     Schema::create($lowerTableName, function (Blueprint $table) use ($sampleRow) {
                         $table->increments('id');
-
                         foreach ($sampleRow as $col => $value) {
-                            if ($col === 'id') continue;
+                            if ($col === 'id')
+                                continue;
+
                             if (is_numeric($value) && !str_contains((string) $value, '.')) {
                                 $table->integer($col)->nullable();
                             } elseif (is_numeric($value)) {
@@ -63,14 +64,13 @@ class SyncAccessToMySQL extends Command
                                 $table->string($col, 255)->nullable();
                             }
                         }
-
                         $table->timestamps();
                     });
 
                     $this->info("Created table: $lowerTableName");
                 }
 
-           
+                // Insert or update rows
                 foreach ($data as $row) {
                     foreach ($row as $key => $value) {
                         if ($value === '') {
@@ -82,7 +82,6 @@ class SyncAccessToMySQL extends Command
                         if ($lowerTableName === 'userinfo') {
                             DB::table($lowerTableName)->updateOrInsert(
                                 ['Badgenumber' => $row['Badgenumber']],
-                                // ['USERID' => $row['USERID']],
                                 $row
                             );
                         } elseif ($lowerTableName === 'checkinout') {
@@ -100,8 +99,6 @@ class SyncAccessToMySQL extends Command
                 $this->info("Inserted into $lowerTableName");
             }
 
-            $today = Carbon::today()->toDateString();
-
             $checkins = DB::table('checkinout as c')
                 ->join('userinfo as u', 'c.USERID', '=', 'u.USERID')
                 ->select(
@@ -110,23 +107,26 @@ class SyncAccessToMySQL extends Command
                     DB::raw('MAX(c.CHECKTIME) as out_time'),
                     'c.MachineId'
                 )
-                // ->whereDate('c.CHECKTIME', $today)
+                // ->whereRaw("FORMAT(c.CHECKTIME, 'mm/dd/yyyy') = ?", [$today]) 
                 ->groupBy('u.Badgenumber', 'c.MachineId')
                 ->get();
 
             $studentData = [];
 
             foreach ($checkins as $checkin) {
+                $in = Carbon::parse($checkin->in_time);
+                $out = Carbon::parse($checkin->out_time);
+
                 $studentData[] = [
                     'id' => $checkin->id,
                     'machine_id' => $checkin->MachineId,
-                    'in_time' => Carbon::parse($checkin->in_time)->format('h:i A'),
-                    'out_time' => Carbon::parse($checkin->out_time)->format('h:i A'),
+                    'date' => $in->format('Y-m-d'), 
+                    'in_time' => $in->format('h:i A'),
+                    'out_time' => $out->format('h:i A'),
                 ];
             }
 
-            \Log::info('Formatted studentData:', $studentData);
-
+            \Log::info('Formatted_studentData:', $studentData);
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'accept' => 'application/json',
@@ -138,7 +138,6 @@ class SyncAccessToMySQL extends Command
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
-
         } catch (\PDOException $e) {
             $this->error('Connection failed: ' . $e->getMessage());
         }
@@ -146,7 +145,8 @@ class SyncAccessToMySQL extends Command
 
     protected function isDateTime($value)
     {
-        if (!is_string($value)) return false;
+        if (!is_string($value))
+            return false;
 
         $formats = [
             'Y-m-d H:i:s',

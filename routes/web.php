@@ -35,7 +35,7 @@ Route::prefix('admin')->group(function () {
 });
 
 
-// Database Management
+//  Database Management 👈
 
 Route::get('admin/database_management', [DatabaseController::class, 'index'])->name('admin.database_management');
 Route::post('admin/update_schedule', [DatabaseController::class, 'updateSchedule'])->name('admin.update_schedule');
