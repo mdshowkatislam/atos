@@ -102,19 +102,21 @@ class SyncAccessToMySQL extends Command
             $checkins = DB::table('checkinout as c')
                 ->join('userinfo as u', 'c.USERID', '=', 'u.USERID')
                 ->select(
-                    'u.Badgenumber as id',
+                    'u.USERID as id',
                     DB::raw('MIN(c.CHECKTIME) as in_time'),
                     DB::raw('MAX(c.CHECKTIME) as out_time'),
                     'c.MachineId'
                 )
-                // ->whereRaw("FORMAT(c.CHECKTIME, 'mm/dd/yyyy') = ?", [$today]) 
-                ->groupBy('u.Badgenumber', 'c.MachineId')
+                ->groupBy('u.USERID', DB::raw('DATE(c.CHECKTIME)'), 'c.MachineId')
                 ->get();
+               
 
             $studentData = [];
 
             foreach ($checkins as $checkin) {
+                   
                 $in = Carbon::parse($checkin->in_time);
+                  
                 $out = Carbon::parse($checkin->out_time);
 
                 $studentData[] = [
