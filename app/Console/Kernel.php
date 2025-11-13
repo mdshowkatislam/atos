@@ -51,7 +51,7 @@ class Kernel extends ConsoleKernel
 
         // Optional logging task
         $schedule->call(function () {
-            \Log::info('Scheduled task runner hit at ' . now());
+            \Log::info('Scheduled task runner hit at:' . now());
         })->everyMinute();
     
     }

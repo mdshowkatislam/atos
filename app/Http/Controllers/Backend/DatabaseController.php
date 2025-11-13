@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ScheduledSetting;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-// use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DatabaseController extends Controller
 {
@@ -43,7 +44,7 @@ class DatabaseController extends Controller
 
     public function updateSchedule(Request $request)
     {
-      
+      Log::info('updatehit');
         $isApi = $request->route() && str_starts_with($request->route()->getPrefix(), 'api');
 
         if ($isApi) {
@@ -84,7 +85,7 @@ class DatabaseController extends Controller
         try {
             $allTables = [];
 
-            $tables = \DB::select('
+            $tables = DB::select('
                 SELECT TABLE_NAME
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = ?
@@ -104,15 +105,15 @@ class DatabaseController extends Controller
     public function showTable()
     {
         try {
-            // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+            // $data = DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
 
-            $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
+            $data = DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
             
             AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
             $result = [];
 
             foreach ($data as $table) {
-                $columns = \DB::select("SHOW COLUMNS FROM `$table->TABLE_NAME`");
+                $columns = DB::select("SHOW COLUMNS FROM `$table->TABLE_NAME`");
                 $result[] = [
                     'name' => $table->TABLE_NAME,
                     'columns' => array_map(fn($col) => $col->Field, $columns),
@@ -138,7 +139,7 @@ class DatabaseController extends Controller
             return redirect()->back()->withErrors('Select at least one column.');
         }
 
-        $data = \DB::table($table)->select($columns)->limit(10)->get();
+        $data = DB::table($table)->select($columns)->limit(10)->get();
 
         return view('selected_columns_view', compact('table', 'columns', 'data'));
     }

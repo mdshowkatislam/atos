@@ -13,6 +13,6 @@ Artisan::command('inspire', function () {
 // Schedule::command('access:sync')->everyMinute();
 
 Schedule::call(function () {
-    \Log::info('Scheduled task runner hit at ' . now());
+    \Log::info('from route/console.php' . now());
 })->everyMinute();
 

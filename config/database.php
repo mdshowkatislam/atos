@@ -103,7 +103,12 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
-       
+        // 'access' => [
+        //     'driver' => 'odbc',
+        //     'dsn' => 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=' . database_path('your_database.accdb') . ';',
+        //     'username' => '',
+        //     'password' => '',
+        // ],
     ],
 
     /*

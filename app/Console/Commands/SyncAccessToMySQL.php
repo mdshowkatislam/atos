@@ -19,18 +19,25 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
+        \Log::info('SyncAccessToMySQL command started.');   
         $accessFile = ScheduledSetting::value('db_location');
+            \Log::info('log1');  
+            \Log::info($accessFile);  
 
         // Correct ODBC DSN path format
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
+          \Log::info('log2');  
+          \Log::info( $dsn);  // the driver problem is here ?
 
         try {
+                  
             $pdo = new PDO($dsn);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
             $tables = ['USERINFO', 'CHECKINOUT'];
-
+          \Log::info( json_encode($pdo));  
+          \Log::info( 'log3');   // not getting this log ?
             foreach ($tables as $table) {
                 $stmt = $pdo->query("SELECT * FROM $table");
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
