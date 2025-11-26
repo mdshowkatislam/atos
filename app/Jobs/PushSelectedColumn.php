@@ -31,6 +31,7 @@ class PushSelectedColumn implements ShouldQueue
             ->select($this->columns)
             ->get()
             ->toJson();
+            \Log::info('from app/Jobs/PushSelectedColumn.php');
 
         Http::post('https://other-server.example/api/endpoint', [
             'data' => $payload,

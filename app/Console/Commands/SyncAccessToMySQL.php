@@ -27,7 +27,7 @@ class SyncAccessToMySQL extends Command
         // Correct ODBC DSN path format
         $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
           \Log::info('log2');  
-          \Log::info( $dsn);  // the driver problem is here ?
+          \Log::info( $dsn);  
 
         try {
                   
@@ -35,9 +35,9 @@ class SyncAccessToMySQL extends Command
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
-            $tables = ['USERINFO', 'CHECKINOUT'];
-          \Log::info( json_encode($pdo));  
-          \Log::info( 'log3');   // not getting this log ?
+            $tables = ['USERINFO', 'CHECKINOUT']; 
+        //   \Log::info( json_encode($pdo));  
+
             foreach ($tables as $table) {
                 $stmt = $pdo->query("SELECT * FROM $table");
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -134,16 +134,18 @@ class SyncAccessToMySQL extends Command
                     'out_time' => $out->format('h:i A'),
                 ];
             }
-
+           
             \Log::info('Formatted_studentData:', $studentData);
+
+            $apiEndpoint = config('api_url.endpoint') . '/accessBdStore'; 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'accept' => 'application/json',
             ])
                 ->withOptions(['verify' => false])
-                ->post(config('api_url.endpoint'), ['studentData' => $studentData]);
+                ->post($apiEndpoint, ['studentData' => $studentData]);
 
-            \Log::info('API Response:', [
+            \Log::info('SyncAccessToMySQL:', [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);

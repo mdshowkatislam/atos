@@ -61,6 +61,11 @@
         .toast-fadeout {
             animation: fadeOut 0.5s ease forwards;
         }
+        
+        .disabled-checkbox {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 @endpush
 
@@ -87,8 +92,6 @@
         </div>
     @endif
 
-
-
     <div class="content">
         <div class="container-fluid">
             <div class="col-md-12">
@@ -108,9 +111,7 @@
                                     @foreach ($result as $key => $table)
                                         <tr>
                                             {{-- ───────────── single form per row ───────────── --}}
-                                            <form >
-                                            {{-- <form id="row_{{ $key }}"
-                                                  method="POST"> --}}
+                                            <form>
                                                 @csrf
 
                                                 {{-- table name cell --}}
@@ -125,15 +126,28 @@
                                                 <td class="col-list">
                                                     @foreach ($table['columns'] as $column)
                                                         @continue($column === 'id')
+                                                        
+                                                        @php
+                                                            $isUserinfoTable = $table['name'] === 'userinfo';
+                                                            $isRequiredColumn = in_array($column, ['USERID']);
+                                                            $isChecked = $isUserinfoTable && $isRequiredColumn;
+                                                            $isDisabled = $isUserinfoTable && !$isRequiredColumn;
+                                                        @endphp
+                                                        
                                                         <div class="form-check item">
-                                                            <input class="form-check-input"
+                                                            <input class="form-check-input {{ $isDisabled ? 'disabled-checkbox' : '' }}"
                                                                    type="checkbox"
                                                                    name="columns[]"
                                                                    value="{{ $column }}"
-                                                                   id="chk_{{ $key }}_{{ $column }}">
-                                                            <label class="form-check-label"
+                                                                   id="chk_{{ $key }}_{{ $column }}"
+                                                                   {{ $isChecked ? 'checked' : '' }}
+                                                                   {{ $isDisabled ? 'disabled' : '' }}>
+                                                            <label class="form-check-label {{ $isDisabled ? 'text-muted' : '' }}"
                                                                    for="chk_{{ $key }}_{{ $column }}">
                                                                 {{ $column }}
+                                                                @if($isDisabled)
+                                                                    <small class="text-muted">(disabled)</small>
+                                                                @endif
                                                             </label>
                                                         </div>
                                                     @endforeach
@@ -141,24 +155,18 @@
 
                                                 {{-- buttons cell --}}
                                                 <td class="align-middle">
-                                                    
                                                     <button type="submit"
                                                             class="btn btn-sm btn-primary w-100 mb-2"
                                                             formmethod="GET"
                                                             formaction="{{ route('admin.table.showSelected') }}">
-                                                        View Data
+                                                        View Data
                                                     </button>
 
                                                     <button type="submit"
                                                             class="btn btn-sm btn-warning w-100"
                                                             formaction="#">
-                                                        Send Selected
+                                                        Send Selected
                                                     </button>
-                                                    {{-- <button type="submit"
-                                                            class="btn btn-sm btn-warning w-100"
-                                                            formaction="{{ route('admin.table.send') }}">
-                                                        Send Selected
-                                                    </button> --}}
                                                 </td>
                                             </form>
                                         </tr>
@@ -175,25 +183,27 @@
         </div>
     </div>
 @endsection
+
 @push('js')
     <script>
         const toast = document.getElementById('queued-toast');
+        if (toast) {
+            // After 3 seconds, add the fade-out animation class
+            setTimeout(() => {
+                toast.classList.add('toast-fadeout');
+            }, 3000);
 
-        // After 3 seconds, add the fade-out animation class
-        setTimeout(() => {
-            toast.classList.add('toast-fadeout');
-        }, 3000);
+            // After the fade-out animation completes (0.5s), remove the element
+            toast.addEventListener('animationend', (event) => {
+                if (event.animationName === 'fadeOut') {
+                    toast.remove();
+                }
+            });
 
-        // After the fade-out animation completes (0.5s), remove the element
-        toast.addEventListener('animationend', (event) => {
-            if (event.animationName === 'fadeOut') {
-                toast.remove();
-            }
-        });
-
-        // Optional: allow user to click the toast to dismiss immediately
-        toast.addEventListener('click', () => {
-            toast.classList.add('toast-fadeout');
-        });
+            // Optional: allow user to click the toast to dismiss immediately
+            toast.addEventListener('click', () => {
+                toast.classList.add('toast-fadeout');
+            });
+        }
     </script>
 @endpush

@@ -4,6 +4,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Backend\DatabaseController;
+use App\Http\Controllers\Backend\SyncController;
 use App\Http\Controllers\Backend\ShitController;
 use App\Http\Controllers\Backend\AttendanceModule\ShiftController;
 use App\Http\Controllers\Backend\AttendanceModule\flaxibleTimeController;
@@ -45,6 +46,10 @@ Route::get('admin/table_management', [DatabaseController::class, 'showTable'])->
 Route::get('admin/table/column/{table}', [DatabaseController::class, 'showColumn'])->name('admin.table.column');
 
 Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSelected'])->name('admin.table.showSelected');
+// Route::post('/save-useinfo-table-data', [DatabaseController::class, 'saveUserinfoTableData'])->name('save.useinfo.table.data');
+Route::post('/send-all-userid', [DatabaseController::class, 'sendAllUserId'])
+    ->name('send.all.userid');
+
 
 // important route for 2nd job
 // Route::post('admin/table/send', function (Request $request) { 

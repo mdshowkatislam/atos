@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessUserIdsJob;
 use App\Models\ScheduledSetting;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 
 class DatabaseController extends Controller
 {
@@ -44,7 +46,7 @@ class DatabaseController extends Controller
 
     public function updateSchedule(Request $request)
     {
-      Log::info('updatehit');
+        Log::info('updatehit');
         $isApi = $request->route() && str_starts_with($request->route()->getPrefix(), 'api');
 
         if ($isApi) {
@@ -129,24 +131,95 @@ class DatabaseController extends Controller
 
         return view('backend.database.table', compact('result'));
     }
+public function showSelected(Request $request)
+{
+    $table = $request->input('table');
+    $columns = $request->input('columns') ?? [];
 
-    public function showSelected(Request $request)
-    {
-        $table = $request->input('table');
-        $columns = $request->input('columns') ?? [];
+    // Check if table contains ID column
+    $hasId = \Schema::hasColumn($table, 'id');
+
+    if ($hasId && !in_array('id', $columns)) {
         array_unshift($columns, 'id');
-        if (empty($columns)) {
-            return redirect()->back()->withErrors('Select at least one column.');
-        }
-
-        $data = DB::table($table)->select($columns)->limit(10)->get();
-
-        return view('selected_columns_view', compact('table', 'columns', 'data'));
     }
+
+    if (empty($columns)) {
+        return redirect()->back()->withErrors('Select at least one column.');
+    }
+
+    // Fetch paginated data
+    $data = DB::table($table)
+        ->select($columns)
+        ->paginate(5);
+
+    // ⭐ Fetch last sync log (important!)
+    $lastLog = DB::table('user_id_sync_logs')
+        ->orderBy('id', 'DESC')
+        ->first();
+
+    return view('selected_columns_view', compact('table', 'columns', 'data', 'lastLog'));
+}
+
 
     public function sendSelected(Request $request)
     {
         dd('hi');
         return redirect()->back()->with('success', 'Selected columns will be sent in every 3 minuts!');
+    }
+
+//    public function saveUserinfoTableData(Request $request)
+// {
+//     // Extract directly from request
+//     $userIds = array_unique(array_column($request->input('data'), 'USERID'));
+
+//     ProcessUserIdsJob::dispatch($userIds);
+
+//     return redirect()->back()->with('success', 'Data is being processed in background!');
+// }
+
+    public function sendAllUserId(Request $request)
+    {
+        $table = $request->input('table');
+        $columns = $request->input('columns', []);
+  
+
+        if (!$table || empty($columns)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid table or columns.'
+            ], 400);
+        }
+
+        // Ensure table exists
+        if (!\Schema::hasTable($table)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Table not found.'
+            ], 404);
+        }
+
+        // Validate columns exist
+        foreach ($columns as $col) {
+            if (!\Schema::hasColumn($table, $col)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Column '{$col}' not found."
+                ], 400);
+            }
+        }
+
+        // Fetch all rows (optimized)
+        $allData = DB::table($table)->select($columns)->get();
+        $userIds= $allData->pluck('USERID')->toArray();
+
+        ProcessUserIdsJob::dispatch($userIds);  
+  
+        \Log::info('Requested columns:' . json_encode($userIds));  
+       
+        return response()->json([
+            'success' => true,
+            'total_records' => $allData->count(),
+            'records' => $allData
+        ]);
     }
 }

@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
+           \Log::info('from app/Console/Kernal.php');
         $syncMethodMap = [
             1 => 'everyMinute',
             2 => 'everyThirtyMinutes',
