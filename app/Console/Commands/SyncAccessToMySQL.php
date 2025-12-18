@@ -19,53 +19,109 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
-        \Log::info('SyncAccessToMySQL command started.');   
-        $accessFile = ScheduledSetting::value('db_location');
-            \Log::info('log1');  
-            \Log::info($accessFile);  
+        // ------------------------------------------------------------------
+        // Prevent overlapping runs (Windows Task Scheduler safe)
+        // ------------------------------------------------------------------
+        if (cache()->has('access_sync_running')) {
+            \Log::warning('access:sync already running, skipped');
+            return Command::SUCCESS;
+        }
 
-        // Correct ODBC DSN path format
-        $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$accessFile;";
-          \Log::info('log2');  
-          \Log::info( $dsn);  
+        cache()->put('access_sync_running', true, 600);  // lock for 10 minutes
 
         try {
-                  
+            // ------------------------------------------------------------------
+            // Load settings (single-row table design)
+            // ------------------------------------------------------------------
+            $settings = ScheduledSetting::first();
+
+            if (!$settings) {
+                \Log::error('scheduled_settings row not found');
+                return Command::SUCCESS;
+            }
+
+            $syncTime = (int) ($settings->value ?? 1);  // 1–7
+            if ($syncTime < 1 || $syncTime > 7) {
+                $syncTime = 1;
+            }
+
+            $lastSync = $settings->last_sync;
+            $now = now();
+
+            // ------------------------------------------------------------------
+            // Decide whether sync should run
+            // ------------------------------------------------------------------
+            if ($lastSync) {
+                $last = Carbon::parse($lastSync);
+
+                $shouldRun = match ($syncTime) {
+                    1 => $last->diffInMinutes($now) >= 1,
+                    2 => $last->diffInMinutes($now) >= 30,
+                    3 => $last->diffInHours($now) >= 1,
+                    4 => $last->diffInHours($now) >= 2,
+                    5 => $now->format('H:i') === '13:00',
+                    6 => in_array($now->format('H'), ['01', '13']) && $last->diffInMinutes($now) >= 1,
+                    7 => $now->isBetween(
+                        $now->copy()->setTime(9, 0),
+                        $now->copy()->setTime(17, 0)
+                    ) && $last->diffInMinutes($now) >= 1,
+                    default => false,
+                };
+
+                if (!$shouldRun) {
+                    \Log::info('access:sync skipped by schedule rule');
+                    return Command::SUCCESS;
+                }
+            }
+
+            \Log::info('access:sync EXECUTING');
+
+            // ------------------------------------------------------------------
+            // Validate Access DB file
+            // ------------------------------------------------------------------
+            $accessFile = $settings->db_location;
+
+            if (!$accessFile || !file_exists($accessFile)) {
+                \Log::error('Access DB file not found: ' . $accessFile);
+                return Command::FAILURE;
+            }
+
+            // ------------------------------------------------------------------
+            // Connect to MS Access
+            // ------------------------------------------------------------------
+            $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq={$accessFile};";
+
             $pdo = new PDO($dsn);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
-            $tables = ['USERINFO', 'CHECKINOUT']; 
-        //   \Log::info( json_encode($pdo));  
+            // ------------------------------------------------------------------
+            // Sync tables
+            // ------------------------------------------------------------------
+            $tables = ['USERINFO', 'CHECKINOUT'];
 
             foreach ($tables as $table) {
-                $stmt = $pdo->query("SELECT * FROM $table");
+                $stmt = $pdo->query("SELECT * FROM {$table}");
                 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                $this->info('Fetched ' . count($data) . " rows from $table");
 
                 if (empty($data)) {
-                    $this->warn("No data found in $table. Skipping table creation and insertion.");
                     continue;
                 }
 
-                $lowerTableName = strtolower($table);
+                $tableName = strtolower($table);
                 $sampleRow = $data[0];
 
-                // Create table dynamically
-                if (!Schema::hasTable($lowerTableName)) {
-                    Schema::create($lowerTableName, function (Blueprint $table) use ($sampleRow) {
+                if (!Schema::hasTable($tableName)) {
+                    Schema::create($tableName, function (Blueprint $table) use ($sampleRow) {
                         $table->increments('id');
                         foreach ($sampleRow as $col => $value) {
-                            if ($col === 'id')
-                                continue;
-
                             if (is_numeric($value) && !str_contains((string) $value, '.')) {
                                 $table->integer($col)->nullable();
                             } elseif (is_numeric($value)) {
                                 $table->float($col)->nullable();
                             } elseif ($this->isDateTime($value)) {
                                 $table->dateTime($col)->nullable();
-                            } elseif (strlen($value) > 255) {
+                            } elseif (strlen((string) $value) > 255) {
                                 $table->text($col)->nullable();
                             } else {
                                 $table->string($col, 255)->nullable();
@@ -73,39 +129,34 @@ class SyncAccessToMySQL extends Command
                         }
                         $table->timestamps();
                     });
-
-                    $this->info("Created table: $lowerTableName");
                 }
 
-                // Insert or update rows
                 foreach ($data as $row) {
-                    foreach ($row as $key => $value) {
-                        if ($value === '') {
-                            $row[$key] = null;
+                    foreach ($row as $k => $v) {
+                        if ($v === '') {
+                            $row[$k] = null;
                         }
                     }
 
-                    try {
-                        if ($lowerTableName === 'userinfo') {
-                            DB::table($lowerTableName)->updateOrInsert(
-                                ['Badgenumber' => $row['Badgenumber']],
-                                $row
-                            );
-                        } elseif ($lowerTableName === 'checkinout') {
-                            DB::table($lowerTableName)->updateOrInsert(
-                                ['LOGID' => $row['LOGID']],
-                                $row
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        $this->error("Insert failed for $lowerTableName: " . $e->getMessage());
-                        $this->error('Data: ' . json_encode($row));
+                    if ($tableName === 'userinfo') {
+                        DB::table($tableName)->updateOrInsert(
+                            ['USERID' => $row['USERID']],
+                            $row
+                        );
+                    }
+
+                    if ($tableName === 'checkinout') {
+                        DB::table($tableName)->updateOrInsert(
+                            ['LOGID' => $row['LOGID']],
+                            $row
+                        );
                     }
                 }
-
-                $this->info("Inserted into $lowerTableName");
             }
 
+            // ------------------------------------------------------------------
+            // Push formatted data to API
+            // ------------------------------------------------------------------
             $checkins = DB::table('checkinout as c')
                 ->join('userinfo as u', 'c.USERID', '=', 'u.USERID')
                 ->select(
@@ -116,41 +167,40 @@ class SyncAccessToMySQL extends Command
                 )
                 ->groupBy('u.USERID', DB::raw('DATE(c.CHECKTIME)'), 'c.MachineId')
                 ->get();
-               
 
             $studentData = [];
 
-            foreach ($checkins as $checkin) {
-                   
-                $in = Carbon::parse($checkin->in_time);
-                  
-                $out = Carbon::parse($checkin->out_time);
-
+            foreach ($checkins as $row) {
                 $studentData[] = [
-                    'id' => $checkin->id,
-                    'machine_id' => $checkin->MachineId,
-                    'date' => $in->format('Y-m-d'), 
-                    'in_time' => $in->format('h:i A'),
-                    'out_time' => $out->format('h:i A'),
+                    'id' => $row->id,
+                    'machine_id' => $row->MachineId,
+                    'date' => Carbon::parse($row->in_time)->format('Y-m-d'),
+                    'in_time' => Carbon::parse($row->in_time)->format('h:i A'),
+                    'out_time' => Carbon::parse($row->out_time)->format('h:i A'),
                 ];
             }
-           
-            \Log::info('Formatted_studentData:', $studentData);
 
-            $apiEndpoint = config('api_url.endpoint') . '/accessBdStore'; 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'accept' => 'application/json',
-            ])
-                ->withOptions(['verify' => false])
-                ->post($apiEndpoint, ['studentData' => $studentData]);
+            Http::withOptions(['verify' => false])
+                ->acceptJson()
+                ->post(config('api_url.endpoint') . '/accessBdStore', [
+                    'studentData' => $studentData
+                ]);
 
-            \Log::info('SyncAccessToMySQL:', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            // ------------------------------------------------------------------
+            // Update last_sync
+            // ------------------------------------------------------------------
+            $settings->update([
+                'last_sync' => now(),
             ]);
-        } catch (\PDOException $e) {
-            $this->error('Connection failed: ' . $e->getMessage());
+
+            // \Log::info('✅ access:sync COMPLETED at ' . now());
+
+            return Command::SUCCESS;
+        } finally {
+            // ------------------------------------------------------------------
+            // Release lock
+            // ------------------------------------------------------------------
+            cache()->forget('access_sync_running');
         }
     }
 

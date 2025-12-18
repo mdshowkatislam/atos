@@ -1,0 +1,13 @@
+This is Access to Mysql DB data sync system: ( Here below how its configured)
+1) first if you are in local pc then start the Windows Task Scheduler:
+2) Then in the top menu bar click the action button and then "Create Task"
+3) Then in pop up model ->
+       General-> give the task name and description
+       Triggers-> from the bottom "new"->fill the settings and advance settings
+       Action->from the bottom "new"->Program/script ->browse(give the program name. example:php or javascript)
+                                     ->Add arguments(optional) : give the command "artisan access:sync"
+                                      ->Start In (optional) : give the project location (like: C:\wamp64\www\atosql )
+                                       -> then fix the others configuration tabs 
+4) Then ok ( if required give the windows password)
+5) Then come back to the main Task Scheduler page and in the right bottom side panel click run 
+6) For Stop the task: click stop and disable .

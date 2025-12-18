@@ -129,7 +129,7 @@
                                                         
                                                         @php
                                                             $isUserinfoTable = $table['name'] === 'userinfo';
-                                                            $isRequiredColumn = in_array($column, ['USERID']);
+                                                            $isRequiredColumn = in_array($column, ['USERID','Badgenumber','name']);
                                                             $isChecked = $isUserinfoTable && $isRequiredColumn;
                                                             $isDisabled = $isUserinfoTable && !$isRequiredColumn;
                                                         @endphp

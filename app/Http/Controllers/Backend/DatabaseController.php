@@ -177,49 +177,50 @@ public function showSelected(Request $request)
 //     return redirect()->back()->with('success', 'Data is being processed in background!');
 // }
 
-    public function sendAllUserId(Request $request)
-    {
-        $table = $request->input('table');
-        $columns = $request->input('columns', []);
-  
+  public function sendAllUserId(Request $request)
+{
+    $table = $request->input('table');
+    $columns = $request->input('columns', []);
 
-        if (!$table || empty($columns)) {
+    if (!$table || empty($columns)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid table or columns.'
+        ], 400);
+    }
+
+    if (!\Schema::hasTable($table)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Table not found.'
+        ], 404);
+    }
+
+    foreach ($columns as $col) {
+        if (!\Schema::hasColumn($table, $col)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid table or columns.'
+                'message' => "Column '{$col}' not found."
             ], 400);
         }
-
-        // Ensure table exists
-        if (!\Schema::hasTable($table)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Table not found.'
-            ], 404);
-        }
-
-        // Validate columns exist
-        foreach ($columns as $col) {
-            if (!\Schema::hasColumn($table, $col)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Column '{$col}' not found."
-                ], 400);
-            }
-        }
-
-        // Fetch all rows (optimized)
-        $allData = DB::table($table)->select($columns)->get();
-        $userIds= $allData->pluck('USERID')->toArray();
-
-        ProcessUserIdsJob::dispatch($userIds);  
-  
-        \Log::info('Requested columns:' . json_encode($userIds));  
-       
-        return response()->json([
-            'success' => true,
-            'total_records' => $allData->count(),
-            'records' => $allData
-        ]);
     }
+
+    // Fetch all rows (full rows you selected)
+    $allData = DB::table($table)->select($columns)->get();
+
+    \Log::info("Fetched rows: " . json_encode($allData, JSON_PRETTY_PRINT));
+
+    // Convert Collection → array of associative arrays
+    $rowsArray = $allData->map(fn ($row) => (array)$row)->toArray();
+
+    // Send full rows to the job
+    ProcessUserIdsJob::dispatch($rowsArray);
+
+    return response()->json([
+        'success' => true,
+        'total_records' => $allData->count(),
+        'records' => $allData
+    ]);
+}
+
 }

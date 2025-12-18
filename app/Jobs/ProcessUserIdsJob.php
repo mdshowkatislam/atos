@@ -15,21 +15,21 @@ class ProcessUserIdsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected array $userIds;
+    protected array $rows;
 
-    public function __construct(array $userIds)
+    public function __construct(array $rows)
     {
-        $this->userIds = $userIds;
+        $this->rows = $rows;
     }
 
     public function handle()
     {
         $endpoint = rtrim(config('api_url.endpoint'), '/') . '/user_id_store';
 
-        foreach (array_chunk($this->userIds, 500) as $chunk) {
-            
-            // Prepare payload
-            $payload = array_map(fn($id) => ['profile_id' => (int)$id], $chunk);
+        foreach (array_chunk($this->rows, 500) as $chunk) {
+
+            // 👉 Send FULL rows (not only USERID)
+            $payload = $chunk;
 
             try {
                 $response = Http::retry(3, 500)
@@ -38,12 +38,11 @@ class ProcessUserIdsJob implements ShouldQueue
                         'Accept' => 'application/json',
                         'Content-Type' => 'application/json'
                     ])
-                    ->post($endpoint, ['profileIds' => $payload]);
+                    ->post($endpoint, ['records' => $payload]);
 
                 $status = $response->status();
                 $data = $response->json();
 
-                // Save log
                 UserIdSyncLog::create([
                     'chunk_size' => count($payload),
                     'success' => $response->successful(),
@@ -63,8 +62,6 @@ class ProcessUserIdsJob implements ShouldQueue
                 ]);
 
             } catch (\Exception $e) {
-
-                // Log a failed sync attempt
                 UserIdSyncLog::create([
                     'chunk_size' => count($chunk),
                     'success' => false,
@@ -78,8 +75,8 @@ class ProcessUserIdsJob implements ShouldQueue
                 Log::error("ProcessUserIdsJob Exception: " . $e->getMessage());
             }
 
-            // Avoid stress
-            usleep(200000);
+            usleep(200000); // 0.2 sec
         }
     }
 }
+

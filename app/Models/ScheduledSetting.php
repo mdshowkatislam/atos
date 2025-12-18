@@ -11,7 +11,8 @@ class ScheduledSetting extends Model
     protected $fillable = [
         'key',
         'value',
-        'db_location'
+        'db_location',
+        'last_sync'
     ];
 
     public $timestamps = true;
