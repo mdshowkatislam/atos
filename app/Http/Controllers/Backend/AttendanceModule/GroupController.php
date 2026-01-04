@@ -4,37 +4,48 @@ namespace App\Http\Controllers\Backend\AttendanceModule;
 
 use App\Http\Controllers\Controller;
 use App\Models\ShiftSetting;
+use App\Services\UnderConstructionService;
 use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
     public function index()
-    {dd('hi');
-            $shift = ShiftSetting::first();
-            if($shift){
-                 return view('backend.shift_management.index', compact('shift'));
-            }
+    {
+        UnderConstructionService::show(
+            '🚧 Group Under Construction 🚧',
+            'This module is currently being developed.'
+        );
+
+        $shift = ShiftSetting::first();
+        if ($shift) {
+            return view('backend.shift_management.index', compact('shift'));
+        }
 
         return view('backend.shift_management.index');
     }
+
     public function add()
     {
-dd('hi');
+        dd('hi');
     }
+
     public function edit($id)
     {
-dd('hi');
+        dd('hi');
     }
+
     public function store(Request $request)
     {
-dd('hi');
+        dd('hi');
     }
-    public function update(Request $request,$id)
+
+    public function update(Request $request, $id)
     {
-dd('hi');
+        dd('hi');
     }
+
     public function destroy($id)
     {
-dd('hi');
+        dd('hi');
     }
 }

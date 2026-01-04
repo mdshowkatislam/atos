@@ -7,10 +7,16 @@ use App\Models\ShiftSetting;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule; 
+use App\Services\UnderConstructionService;
 class ShiftController extends Controller
 {
     public function index()
     {
+         UnderConstructionService::show(
+            '🚧 Shift Under Construction 🚧',
+            'This module is currently being developed.'
+        );
+        
         $shift = ShiftSetting::where('status', 1)->get();
 
         if ($shift) {
