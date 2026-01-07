@@ -11,15 +11,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
 use PDO;
 
-class SyncAccessToMySQL extends Command
+class SyncAccessToMySQL2 extends Command
 {
     // protected $description = 'Sync data from MS Access to MySQL and prepare formatted student data';
 
-    protected $signature = 'access:sync {--file=}';
+    protected $signature = 'access:sync';
 
     public function handle()
     {
-           \Log::info('AAA3');
         // ------------------------------------------------------------------
         // Prevent overlapping runs (Windows Task Scheduler safe)
         // ------------------------------------------------------------------
@@ -32,59 +31,55 @@ class SyncAccessToMySQL extends Command
 
         try {
             // ------------------------------------------------------------------
-            // Determine input Access DB file (allow override via --file)
+            // Load settings (single-row table design)
             // ------------------------------------------------------------------
-            $cliFile = $this->option('file');
-
-            // Load settings (single-row table design) if available
             $settings = ScheduledSetting::first();
 
-            if (!$settings && !$cliFile) {
+            if (!$settings) {
                 \Log::error('scheduled_settings row not found');
                 return Command::SUCCESS;
             }
 
-            // If no CLI file provided, enforce schedule rules from settings
-            if (!$cliFile) {
-                $syncTime = (int) ($settings->value ?? 1);  // 1–7
-                if ($syncTime < 1 || $syncTime > 7) {
-                    $syncTime = 1;
-                }
-
-                $lastSync = $settings->last_sync;
-                $now = now();
-
-                // Decide whether sync should run
-                if ($lastSync) {
-                    $last = Carbon::parse($lastSync);
-
-                    $shouldRun = match ($syncTime) {
-                        1 => $last->diffInMinutes($now) >= 1,
-                        2 => $last->diffInMinutes($now) >= 30,
-                        3 => $last->diffInHours($now) >= 1,
-                        4 => $last->diffInHours($now) >= 2,
-                        5 => $now->format('H:i') === '13:00',
-                        6 => in_array($now->format('H'), ['01', '13']) && $last->diffInMinutes($now) >= 1,
-                        7 => $now->isBetween(
-                            $now->copy()->setTime(9, 0),
-                            $now->copy()->setTime(17, 0)
-                        ) && $last->diffInMinutes($now) >= 1,
-                        default => false,
-                    };
-
-                    if (!$shouldRun) {
-                        \Log::info('access:sync skipped by schedule rule');
-                        return Command::SUCCESS;
-                    }
-                }
-
-                \Log::info('access:sync EXECUTING');
-            } else {
-                \Log::info('access:sync EXECUTING with uploaded file: ' . $cliFile);
+            $syncTime = (int) ($settings->value ?? 1);  // 1–7
+            if ($syncTime < 1 || $syncTime > 7) {
+                $syncTime = 1;
             }
 
-            // Determine which Access DB file to use
-            $accessFile = $cliFile ?: $settings->db_location;
+            $lastSync = $settings->last_sync;
+            $now = now();
+
+            // ------------------------------------------------------------------
+            // Decide whether sync should run
+            // ------------------------------------------------------------------
+            if ($lastSync) {
+                $last = Carbon::parse($lastSync);
+
+                $shouldRun = match ($syncTime) {
+                    1 => $last->diffInMinutes($now) >= 1,
+                    2 => $last->diffInMinutes($now) >= 30,
+                    3 => $last->diffInHours($now) >= 1,
+                    4 => $last->diffInHours($now) >= 2,
+                    5 => $now->format('H:i') === '13:00',
+                    6 => in_array($now->format('H'), ['01', '13']) && $last->diffInMinutes($now) >= 1,
+                    7 => $now->isBetween(
+                        $now->copy()->setTime(9, 0),
+                        $now->copy()->setTime(17, 0)
+                    ) && $last->diffInMinutes($now) >= 1,
+                    default => false,
+                };
+
+                if (!$shouldRun) {
+                    \Log::info('access:sync skipped by schedule rule');
+                    return Command::SUCCESS;
+                }
+            }
+
+            \Log::info('access:sync EXECUTING');
+
+            // ------------------------------------------------------------------
+            // Validate Access DB file
+            // ------------------------------------------------------------------
+            $accessFile = $settings->db_location;
 
             if (!$accessFile || !file_exists($accessFile)) {
                 \Log::error('Access DB file not found: ' . $accessFile);
