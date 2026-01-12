@@ -27,6 +27,7 @@ class Kernel extends HttpKernel
     protected $middlewareAliases = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'prevent_back' => \App\Http\Middleware\PreventBack::class,
+        'access.token' => \App\Http\Middleware\VerifyAccessSyncToken::class,
     ];
 
     // Define route middleware (for specific routes like the 'auth' middleware)
@@ -34,6 +35,7 @@ class Kernel extends HttpKernel
         'auth' => \App\Http\Middleware\Authenticate::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'prevent_back' => \App\Http\Middleware\PreventBack::class,
+        'access.token' => \App\Http\Middleware\VerifyAccessSyncToken::class,
         // Add more route middleware here as needed
     ];
 }

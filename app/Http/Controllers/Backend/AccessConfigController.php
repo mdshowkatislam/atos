@@ -12,7 +12,7 @@ class AccessConfigController extends Controller
 {
     public function config(Request $request)
     {
-           \Log::info('AAA2');
+           \Log::info('QQQ');
 
         $settings = ScheduledSetting::first();
 
@@ -21,18 +21,24 @@ class AccessConfigController extends Controller
                 'enabled' => false
             ]);
         }
-        $uploadedFile = $this->option('file');
-
-        if ($uploadedFile && file_exists($uploadedFile)) {
-            // 🔁 FILE COMES FROM LOCAL PC UPLOAD
-            $accessFile = $uploadedFile;
+        // Accept uploaded file via HTTP POST (field: mdb_file)
+        if ($request->hasFile('mdb_file') && $request->file('mdb_file')->isValid()) {
+            $file = $request->file('mdb_file');
+            $destDir = storage_path('app/access');
+            if (!file_exists($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            $destPath = $destDir . DIRECTORY_SEPARATOR . $file->getClientOriginalName();
+            $file->move($destDir, $file->getClientOriginalName());
+            $accessFile = $destPath;
         } else {
             // 🔁 FALLBACK (legacy/manual run)
             $accessFile = $settings->db_location;
         }
 
         if (!$accessFile || !file_exists($accessFile)) {
-            \Log::error('Access DB file not found: ' . $accessFile);
+
+            \Log::error('kkk-Access DB file not found: ' . $accessFile);
             return response()->json([
                 'enabled' => false
             ]);
@@ -40,7 +46,7 @@ class AccessConfigController extends Controller
 
         return response()->json([
             'enabled' => true,
-            'db_location' => $settings->db_location,
+            'db_location' => $accessFile,
         ]);
     }
 }

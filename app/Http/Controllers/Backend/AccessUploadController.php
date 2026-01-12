@@ -11,7 +11,7 @@ class AccessUploadController extends Controller
 {
     public function upload(Request $request)
     {
-        \Log::info('AAA');
+      
         $request->validate([
             'mdb_file' => 'required|file'
         ]);
@@ -21,14 +21,18 @@ class AccessUploadController extends Controller
             'access',
             'incoming.mdb'
         );
+        
 
         $fullPath = storage_path('app/' . $path);
+        
 
         // 2️⃣ Run sync command WITH TEMP FILE
+        // Allow long-running execution when called from HTTP (temporary/testing)
+        set_time_limit(0);
         Artisan::call('access:sync', [
             '--file' => $fullPath
         ]);
-
+          
         return response()->json([
             'status' => 'ok'
         ]);
