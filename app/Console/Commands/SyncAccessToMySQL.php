@@ -19,6 +19,7 @@ class SyncAccessToMySQL extends Command
 
     public function handle()
     {
+             \Log::error('DDDD');
         // ------------------------------------------------------------------
         // Prevent overlapping runs (Windows Task Scheduler safe)
         // ------------------------------------------------------------------
