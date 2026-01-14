@@ -15,12 +15,16 @@ class AccessConfigController extends Controller
            \Log::info('QQQ');
 
         $settings = ScheduledSetting::first();
+        
+           \Log::info('dbLocation: ' . ($settings ? $settings->db_location : 'NULL')    );
 
         if (!$settings || !$settings->db_location) {
             return response()->json([
-                'enabled' => false
+                'enabled' => false,
+                'message' => 'Database location not configured, is atos system'
             ]);
         }
+        
         // Accept uploaded file via HTTP POST (field: mdb_file)
         if ($request->hasFile('mdb_file') && $request->file('mdb_file')->isValid()) {
             $file = $request->file('mdb_file');
@@ -36,17 +40,30 @@ class AccessConfigController extends Controller
             $accessFile = $settings->db_location;
         }
 
-        if (!$accessFile || !file_exists($accessFile)) {
-
-            \Log::error('kkk-Access DB file not found: ' . $accessFile);
-            return response()->json([
-                'enabled' => false
-            ]);
+        // NOTE: when a remote client (Windows machine) calls this endpoint
+        // we should not require the server to have the same Windows path.
+        // Only validate physical existence when an uploaded file is provided.
+        if ($request->hasFile('mdb_file')) {
+            if (!$accessFile || !file_exists($accessFile)) {
+                \Log::error('kkk-Access DB file not found after upload: ' . $accessFile);
+                return response()->json([
+                    'enabled' => false
+                ]);
+            }
         }
+
+        // indicate whether the server itself has direct access to the file
+        $serverHasFile = is_string($settings->db_location) && file_exists($settings->db_location);
+
+        // determine source hint: if client uploaded in this request -> server,
+        // otherwise if server physically has the file -> server, else client
+        $source = $request->hasFile('mdb_file') ? 'server' : ($serverHasFile ? 'server' : 'client');
 
         return response()->json([
             'enabled' => true,
             'db_location' => $accessFile,
+            'server_has_file' => $serverHasFile,
+            'source' => $source,
         ]);
     }
 }
