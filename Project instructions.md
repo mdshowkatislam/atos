@@ -1,4 +1,5 @@
 Project setup rules: 
+=======================
 1) C:\wamp64\bin\php\php8.2.26\ext 
       check if there the below two .dll file are existed.
         i) pdo_odbc.dll
@@ -37,4 +38,9 @@ Project setup rules:
      v) Run from the terminal "php artisan queue:work --tries-1"
      vi) Then it will sync the users one time.
 
+### For User/Client Pc setup : ( How to setup user pc for zktech mdb file upload)
+    i) In this system database/php_file_for_upload_mdb_as_sql\zk-sync , folder (zk-sync) is the file
+    ii) just copy and pest this "zk-sync" file in "C" drive.
+    iii) and Confirm the Php installed and Php location is setup in Environment variable in client pc
+          to read this file.
  

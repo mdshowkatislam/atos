@@ -111,7 +111,7 @@ class DatabaseController extends Controller
 
             $data = DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
             
-            AND TABLE_NAME IN (?,?)', ['atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+            AND TABLE_NAME IN (?,?)', ['bidyapith_atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
             $result = [];
 
             foreach ($data as $table) {
