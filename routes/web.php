@@ -11,6 +11,7 @@ use App\Http\Controllers\Backend\AttendanceModule\flaxibleTimeController;
 use App\Http\Controllers\Backend\AttendanceModule\GroupController;
 use App\Http\Controllers\Backend\AttendanceModule\SpecialWorkdayController;
 use App\Jobs\PushSelectedColumn;
+use Illuminate\Support\Facades\Artisan;
 
 
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
@@ -21,6 +22,20 @@ Route::get('/access/table/{table}', [AccessController::class, 'showTable'])->nam
 Route::get('/', function() {
     return view('welcome');
 })->name('welcome');
+// For Artisan Command Run in Server 👈
+Route::get('/artisan_migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'php artisan migrate command executed successfully.';
+});
+Route::get('/artisan_optimize', function () {
+    Artisan::call('optimize:clear');
+    Artisan::call('optimize');
+    return 'php artisan optimize command executed successfully.';
+});
+Route::get('/artisan_storage_link', function () {
+    Artisan::call('storage:link');
+    return 'php artisan storage:link command executed successfully.';
+});
 
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\Backend\HomeController::class, 'index'])->name('home');
