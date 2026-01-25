@@ -48,10 +48,12 @@ class AccessUploadController extends Controller
             if ($isSql) {
                 $file->move($destDir, 'incoming.sql');
                 $fullPath = $destDir . DIRECTORY_SEPARATOR . 'incoming.sql';
+                Log::info("FILE MOVED TO: " . $fullPath);
             } else {
                 // default to preserving legacy behaviour for MDB uploads
                 $file->move($destDir, 'incoming.mdb');
                 $fullPath = $destDir . DIRECTORY_SEPARATOR . 'incoming.mdb';
+                Log::info("FILE MOVED TO: " . $fullPath);
             }
             
             $fileSize = filesize($fullPath);

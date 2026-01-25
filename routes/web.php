@@ -12,6 +12,7 @@ use App\Http\Controllers\Backend\AttendanceModule\GroupController;
 use App\Http\Controllers\Backend\AttendanceModule\SpecialWorkdayController;
 use App\Jobs\PushSelectedColumn;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
@@ -23,6 +24,10 @@ Route::get('/', function() {
     return view('welcome');
 })->name('welcome');
 // For Artisan Command Run in Server 👈
+Route::get('/log', function () {
+    Log::debug('This is a debug log test');
+    return 'Log written!';
+});
 Route::get('/artisan_migrate', function () {
     Artisan::call('migrate', ['--force' => true]);
     return 'php artisan migrate command executed successfully.';

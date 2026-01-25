@@ -7,16 +7,17 @@ use App\Models\ScheduledSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AccessConfigController extends Controller
 {
     public function config(Request $request)
     {
-           \Log::info('QQQ');
+           Log::info('QQQ');
 
         $settings = ScheduledSetting::first();
         
-           \Log::info('dbLocation: ' . ($settings ? $settings->db_location : 'NULL')    );
+           Log::info('dbLocation: ' . ($settings ? $settings->db_location : 'NULL')    );
 
         if (!$settings || !$settings->db_location) {
             return response()->json([
@@ -45,7 +46,7 @@ class AccessConfigController extends Controller
         // Only validate physical existence when an uploaded file is provided.
         if ($request->hasFile('mdb_file')) {
             if (!$accessFile || !file_exists($accessFile)) {
-                \Log::error('kkk-Access DB file not found after upload: ' . $accessFile);
+                Log::error('kkk-Access DB file not found after upload: ' . $accessFile);
                 return response()->json([
                     'enabled' => false
                 ]);
@@ -67,3 +68,5 @@ class AccessConfigController extends Controller
         ]);
     }
 }
+
+
