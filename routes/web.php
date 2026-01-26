@@ -1,19 +1,18 @@
 <?php
-use Illuminate\Http\Request; 
-use App\Http\Controllers\UserController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AccessController;
-use App\Http\Controllers\Backend\DatabaseController;
-use App\Http\Controllers\Backend\SyncController;
-use App\Http\Controllers\Backend\ShitController;
-use App\Http\Controllers\Backend\AttendanceModule\ShiftController;
 use App\Http\Controllers\Backend\AttendanceModule\flaxibleTimeController;
 use App\Http\Controllers\Backend\AttendanceModule\GroupController;
+use App\Http\Controllers\Backend\AttendanceModule\ShiftController;
 use App\Http\Controllers\Backend\AttendanceModule\SpecialWorkdayController;
+use App\Http\Controllers\Backend\DatabaseController;
+use App\Http\Controllers\Backend\ShitController;
+use App\Http\Controllers\Backend\SyncController;
+use App\Http\Controllers\AccessController;
+use App\Http\Controllers\UserController;
 use App\Jobs\PushSelectedColumn;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Route;
 
 Route::post('/access/upload', [AccessController::class, 'upload'])->name('access.upload');
 Route::get('/access/tables', [AccessController::class, 'listTables'])->name('access.tables');
@@ -24,10 +23,10 @@ Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadC
 Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
 Route::get('/api-push-queue-processor', [\App\Http\Controllers\Backend\AccessUploadController::class, 'processApiQueue'])->name('api.queue.process');
 
-Route::get('/', function() {
+Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
-// For Artisan Command Run in Server 👈
+// For Artisan Command Run in Server
 Route::get('/log', function () {
     Log::debug('This is a debug log test');
     return 'Log written!';
@@ -39,30 +38,44 @@ Route::get('/artisan_migrate', function () {
 Route::get('/artisan_optimize', function () {
     Artisan::call('optimize:clear');
     Artisan::call('optimize');
+    Log::debug('This is a optimize test');
     return 'php artisan optimize command executed successfully.';
 });
 Route::get('/artisan_storage_link', function () {
     Artisan::call('storage:link');
+    Log::info(Artisan::output());
     return 'php artisan storage:link command executed successfully.';
 });
-Route::get('/test-disabled-functions', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testDisabledFunctions'])->name('test.disabled');
-Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testArtisanCommand'])->name('test.artisan');
-Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
+Route::get('/artisan_sync', function () {
+    Artisan::call('access:sync');
+    Log::info(Artisan::output());
+    return 'php artisan access:sync command executed successfully.';
+});
+
+Route::get('/queue_work', function () {
+    Artisan::call('queue:work', [
+        '--once' => true,
+        '--tries' => 1,
+    ]);
+
+    return 'Queue worker ran once';
+});
+
+
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\Backend\HomeController::class, 'index'])->name('home');
 // User Management
 Route::prefix('admin')->group(function () {
-            Route::get('/users', [UserController::class, 'index'])->name('user.users');       
-            Route::get('/add', [UserController::class,'userAdd'])->name('user.add');
-            Route::post('/store', [UserController::class,'userStore'])->name('user.store');
-            Route::get('/edit/{id}', [UserController::class,'userEdit'])->name('user.edit');
-            Route::post('/update/{id}', [UserController::class,'updateUser'])->name('user.update');
-            Route::post('/delete', [UserController::class,'deleteUser'])->name('user.delete');
-            Route::get('/reset-password', [UserController::class,'resetPassword'])->name('reset.password');
+    Route::get('/users', [UserController::class, 'index'])->name('user.users');
+    Route::get('/add', [UserController::class, 'userAdd'])->name('user.add');
+    Route::post('/store', [UserController::class, 'userStore'])->name('user.store');
+    Route::get('/edit/{id}', [UserController::class, 'userEdit'])->name('user.edit');
+    Route::post('/update/{id}', [UserController::class, 'updateUser'])->name('user.update');
+    Route::post('/delete', [UserController::class, 'deleteUser'])->name('user.delete');
+    Route::get('/reset-password', [UserController::class, 'resetPassword'])->name('reset.password');
 });
 
-
-//  Database Management 👈
+//  Database Management ðŸ‘ˆ
 
 Route::get('admin/database_management', [DatabaseController::class, 'index'])->name('admin.database_management');
 Route::post('admin/update_schedule', [DatabaseController::class, 'updateSchedule'])->name('admin.update_schedule');
@@ -76,22 +89,20 @@ Route::get('admin/table/selected-columns', [DatabaseController::class, 'showSele
 Route::post('/send-all-userid', [DatabaseController::class, 'sendAllUserId'])
     ->name('send.all.userid');
 
-
 // important route for 2nd job
-// Route::post('admin/table/send', function (Request $request) { 
+// Route::post('admin/table/send', function (Request $request) {
 
-//     $table   = $request->string('table'); 
-//     $columns = $request->array('columns');  
-//     // $columns = $request->input('columns', []);   
-    
-//     // optional: store the request, show a toast, whatever…
+//     $table   = $request->string('table');
+//     $columns = $request->array('columns');
+//     // $columns = $request->input('columns', []);
+
+//     // optional: store the request, show a toast, whateverâ€¦
 
 //     PushSelectedColumn::dispatch($table, $columns);
 
 //     // return response()->json(['queued' => true]);
 //     return back()->with('queued', true);
 // })->name('admin.table.send');
-
 
 // ===============   Attendance Management System (api based)   =================
 
