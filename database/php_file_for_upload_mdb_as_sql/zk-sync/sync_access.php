@@ -1,243 +1,219 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+set_time_limit(0);
+ini_set('memory_limit', '1024M');
 
-$apiKey = 'zk-sync-2026';
-$baseUrl = 'https://jmagc-atos.bidyapith.com';
+echo "SCRIPT START\n";
+
+// ================= CONFIG ==================
+
+$apiKey    = 'zk-sync-2026';
+$baseUrl   = 'https://jmagc-atos.bidyapith.com';
+
 $cacheFile = __DIR__ . '/config_cache.json';
-$logFile = __DIR__ . '/error.log';
-// Output SQL dump file that will be uploaded
-$dumpFile = __DIR__ . '/access_dump.sql';
+$logFile   = __DIR__ . '/error.log';
+$dumpFile  = __DIR__ . '/access_dump.sql';
 
-// Ensure previous log is removed so each run starts with a fresh log
-if (file_exists($logFile)) {
-    @unlink($logFile);
-}
+// Start fresh log file
+file_put_contents($logFile, "SCRIPT START\n");
 
-function logMsg($msg) {
+function logMsg($msg)
+{
+    global $logFile;
     file_put_contents(
-        $GLOBALS['logFile'],
-        date('Y-m-d H:i:s') . ' ' . $msg . PHP_EOL,
+        $logFile,
+        date('Y-m-d H:i:s') . ' | ' . $msg . PHP_EOL,
         FILE_APPEND
     );
 }
 
-logMsg('=== START ===');
+logMsg('==== START ====');
 
-// ------------------------------------
-// STEP 1: Fetch MDB path from server
-// ------------------------------------
-$accessFile = null;
+// ------------------------------------------
+// STEP 1: Fetch MDB Path From Server
+// ------------------------------------------
 
-$configCh = curl_init($baseUrl . '/api/access/config');
-curl_setopt_array($configCh, [
+logMsg('Fetching config...');
+
+$ch = curl_init($baseUrl . '/api/access/config');
+
+curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 10,
-    CURLOPT_CONNECTTIMEOUT => 5,
+    CURLOPT_TIMEOUT => 20,
+    CURLOPT_CONNECTTIMEOUT => 10,
     CURLOPT_HTTPHEADER => [
         'Authorization: Bearer ' . $apiKey,
         'Accept: application/json',
     ],
+    CURLOPT_SSL_VERIFYPEER => false,   // disabled ONLY for local Windows SSL issue
+    CURLOPT_SSL_VERIFYHOST => false,
 ]);
 
-$response = curl_exec($configCh);
-$httpCode = curl_getinfo($configCh, CURLINFO_HTTP_CODE);
-curl_close($configCh);
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error    = curl_error($ch);
+curl_close($ch);
 
-logMsg("Config HTTP: $httpCode");
-
-if ($response && $httpCode === 200) {
-    $data = json_decode($response, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        logMsg('JSON ERROR: ' . json_last_error_msg());
-    } else {
-        if (!empty($data['db_location'])) {
-                // Normalize Windows path
-                $accessFile = str_replace('/', '\\', $data['db_location']);
-
-                // Cache local path
-                file_put_contents($cacheFile, json_encode([
-                    'db_location' => $accessFile,
-                    'cached_at' => date('Y-m-d H:i:s')
-                ], JSON_PRETTY_PRINT));
-
-                logMsg("PATH FROM SERVER: $accessFile");
-            } else {
-            if (isset($data['enabled']) && $data['enabled'] === false) {
-                logMsg('CONFIG DISABLED BY SERVER');
-                exit;
-            } else {
-                logMsg('CONFIG RESPONSE MISSING db_location');
-            }
-        }
-    }
-} else {
-    logMsg('CONFIG REQUEST failed or non-200 HTTP: ' . $httpCode);
+if ($error) {
+    logMsg("CONFIG CURL ERROR: $error");
 }
 
-// ------------------------------------
-// STEP 2: Offline fallback
-// ------------------------------------
+$accessFile = null;
+
+if ($httpCode === 200 && $response) {
+    $data = json_decode($response, true);
+
+    if (!empty($data['db_location'])) {
+        $accessFile = str_replace('/', '\\', $data['db_location']);
+        file_put_contents($cacheFile, json_encode([
+            'db_location' => $accessFile,
+            'cached_at'   => date('Y-m-d H:i:s')
+        ], JSON_PRETTY_PRINT));
+
+        logMsg("MDB PATH FROM SERVER: $accessFile");
+    } else {
+        logMsg("CONFIG RESPONSE INVALID");
+    }
+} else {
+    logMsg("CONFIG HTTP ERROR: $httpCode");
+}
+
+// ------------------------------------------
+// STEP 2: Fallback Cache
+// ------------------------------------------
+
 if (!$accessFile && file_exists($cacheFile)) {
     $cached = json_decode(file_get_contents($cacheFile), true);
     $accessFile = $cached['db_location'] ?? null;
-    logMsg('PATH FROM CACHE: ' . ($accessFile ?: 'NULL'));
+    logMsg("MDB PATH FROM CACHE: $accessFile");
 }
 
-// ------------------------------------
-// STEP 3: Validate MDB exists locally
-// ------------------------------------
 if (!$accessFile) {
-    logMsg('ERROR: db_location is empty');
+    logMsg("ERROR: No MDB path available");
     exit;
 }
 
-logMsg("Target MDB file: $accessFile");
+// ------------------------------------------
+// STEP 3: Validate MDB Exists
+// ------------------------------------------
 
 if (!file_exists($accessFile)) {
-    logMsg("ERROR: File does not exist: $accessFile");
-
-// Try alternative paths commonly used on Windows client
-$altPaths = [
-    'C:\\ZKTeco\\ZKAccess3.5\\Access.mdb',
-    'C:\\Program Files\\ZKTeco\\ZKAccess3.5\\Access.mdb',
-    'C:\\Program Files (x86)\\ZKTeco\\ZKAccess3.5\\Access.mdb',
-    'D:\\ZKTeco\\ZKAccess3.5\\Access.mdb',
-    'E:\\ZKTeco\\ZKAccess3.5\\Access.mdb',
-];
-
-foreach ($altPaths as $altPath) {
-    if (file_exists($altPath)) {
-        $accessFile = $altPath;
-        logMsg("Found MDB at alternative path: $altPath");
-        break;
-    }
-}
-
-if (!file_exists($accessFile)) {
-    logMsg('ERROR: MDB file not found at any location');
+    logMsg("ERROR: MDB NOT FOUND: $accessFile");
     exit;
 }
-}
 
-// Check if file is readable
 if (!is_readable($accessFile)) {
-    logMsg("ERROR: File is not readable: $accessFile");
+    logMsg("ERROR: MDB NOT READABLE: $accessFile");
     exit;
 }
 
-$fileSize = filesize($accessFile);
-logMsg("File found: " . basename($accessFile) . " ($fileSize bytes)");
+logMsg("MDB FOUND: $accessFile");
 
-// ------------------------------------
-// STEP 4: Upload MDB to server
-// ------------------------------------
-// -----------------------------
-// New flow: read tables locally, dump SQL, upload SQL file
-// -----------------------------
+// ------------------------------------------
+// STEP 4: Read MDB → SQL Dump
+// ------------------------------------------
 
-logMsg('Dumping USERINFO and CHECKINOUT to SQL...');
+logMsg('Dumping MDB → SQL...');
 
 function sqlEscape($val)
 {
     if ($val === null) return 'NULL';
-    if (is_int($val) || is_float($val)) return $val;
-    $val = strval($val);
-    $val = str_replace("\x00", '', $val);
-    $val = str_replace("\\", "\\\\", $val);
-    $val = str_replace("'", "\\'", $val);
-    return "'" . $val . "'";
+    $val = str_replace(["\\", "'"], ["\\\\", "\\'"], $val);
+    return "'$val'";
 }
 
 $dsn = "odbc:Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq={$accessFile};";
+
 try {
+
     $pdo = new PDO($dsn);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $tables = [
-        'USERINFO' => ['cols' => ['USERID', 'Badgenumber', 'name']],
-        'CHECKINOUT' => ['cols' => ['USERID', 'CHECKTIME']],
+        'USERINFO'   => ['USERID', 'Badgenumber', 'name'],
+        'CHECKINOUT' => ['USERID', 'CHECKTIME'],
     ];
 
-    $sql = "-- SQL dump generated by sync_access.php\n-- Tables: USERINFO, CHECKINOUT\n\n";
+    $sql = "-- ZK ACCESS SQL DUMP\n-- Generated: " . date('Y-m-d H:i:s') . "\n\n";
 
-    foreach ($tables as $table => $meta) {
+    foreach ($tables as $table => $cols) {
+
         $tableName = strtolower($table);
-        if ($table === 'USERINFO') {
-            $sql .= "DROP TABLE IF EXISTS `userinfo`;\n";
-            $sql .= "CREATE TABLE `userinfo` ( `id` INT AUTO_INCREMENT PRIMARY KEY, `USERID` INT NULL, `Badgenumber` VARCHAR(255) NULL, `name` VARCHAR(255) NULL, `created_at` DATETIME NULL, `updated_at` DATETIME NULL );\n\n";
-        } else {
-            $sql .= "DROP TABLE IF EXISTS `checkinout`;\n";
-            $sql .= "CREATE TABLE `checkinout` ( `id` INT AUTO_INCREMENT PRIMARY KEY, `USERID` INT NULL, `CHECKTIME` DATETIME NULL, `created_at` DATETIME NULL, `updated_at` DATETIME NULL );\n\n";
+
+        $sql .= "DROP TABLE IF EXISTS `$tableName`;\n";
+        $sql .= "CREATE TABLE `$tableName` (\n";
+        $sql .= " `id` INT AUTO_INCREMENT PRIMARY KEY,\n";
+
+        foreach ($cols as $c) {
+            $type = $c === 'CHECKTIME' ? 'DATETIME' : 'VARCHAR(255)';
+            $sql .= " `$c` $type NULL,\n";
         }
 
-        $cols = implode(', ', $meta['cols']);
-        $stmt = $pdo->prepare("SELECT {$cols} FROM {$table}");
-        $stmt->execute();
+        $sql .= " `created_at` DATETIME NULL,\n `updated_at` DATETIME NULL\n);\n\n";
 
-        $insertPrefix = "INSERT INTO `{$tableName}` (";
-        $insertPrefix .= implode(', ', array_map(fn($c) => "`$c`", $meta['cols']));
-        $insertPrefix .= ") VALUES ";
+        $stmt = $pdo->query("SELECT " . implode(',', $cols) . " FROM $table");
 
         $rows = [];
+
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $vals = [];
-            foreach ($meta['cols'] as $c) {
-                $v = $row[$c] ?? null;
-                if ($c === 'CHECKTIME' && $v !== null) {
-                    $dt = date_create($v);
-                    if ($dt) $v = $dt->format('Y-m-d H:i:s');
-                }
-                $vals[] = sqlEscape($v);
+            foreach ($row as &$v) {
+                $v = $v !== null ? sqlEscape($v) : 'NULL';
             }
-            $rows[] = '(' . implode(', ', $vals) . ')';
+            $rows[] = '(' . implode(',', $row) . ')';
         }
 
-        if (!empty($rows)) {
-            $sql .= $insertPrefix . "\n" . implode(",\n", $rows) . ";\n\n";
+        if ($rows) {
+            $sql .= "INSERT INTO `$tableName` (" . implode(',', $cols) . ") VALUES\n";
+            $sql .= implode(",\n", $rows) . ";\n\n";
         }
     }
 
-    // Write SQL dump
     file_put_contents($dumpFile, $sql);
-    $dumpSize = filesize($dumpFile);
-    logMsg("SQL dump written: {$dumpFile} ({$dumpSize} bytes)");
 
-    // Upload the SQL file to the server using same 'mdb_file' field so server saves it in access folder
-    logMsg('Uploading SQL dump to server...');
+    logMsg("SQL DUMP GENERATED: " . filesize($dumpFile) . " bytes");
 
-    $ch = curl_init($baseUrl . '/api/access/upload');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_TIMEOUT => 600,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $apiKey,
-            'Accept: application/json',
-        ],
-        CURLOPT_POSTFIELDS => [
-            'mdb_file' => new CURLFile($dumpFile, 'text/sql', 'Access.sql')
-        ],
-    ]);
-
-    $startTime = microtime(true);
-    $result = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    $totalTime = round(microtime(true) - $startTime, 2);
-    curl_close($ch);
-
-    if ($error) {
-        logMsg("UPLOAD ERROR: $error (Time: {$totalTime}s)");
-    } else {
-        logMsg("UPLOAD HTTP: $httpCode (Time: {$totalTime}s)");
-        logMsg("UPLOAD RESPONSE: $result");
-    }
-
-    logMsg('=== END ===');
-
-} catch (\Throwable $e) {
-    logMsg('ERROR during dump/upload: ' . $e->getMessage());
-    logMsg($e->getTraceAsString());
+} catch (Throwable $e) {
+    logMsg("DUMP ERROR: " . $e->getMessage());
     exit;
 }
+
+// ------------------------------------------
+// STEP 5: Upload SQL Dump
+// ------------------------------------------
+
+logMsg("Uploading SQL dump...");
+
+$ch = curl_init($baseUrl . '/api/access/upload');
+
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_TIMEOUT => 900,
+    CURLOPT_CONNECTTIMEOUT => 10,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer ' . $apiKey,
+        'Accept: application/json',
+    ],
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_SSL_VERIFYHOST => false,
+    CURLOPT_POSTFIELDS => [
+        'mdb_file' => new CURLFile($dumpFile, 'text/sql', 'Access.sql')
+    ],
+]);
+
+$result   = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error    = curl_error($ch);
+curl_close($ch);
+
+if ($error) {
+    logMsg("UPLOAD ERROR: $error");
+} else {
+    logMsg("UPLOAD HTTP: $httpCode");
+    logMsg("UPLOAD RESPONSE: $result");
+}
+
+logMsg('==== END ====');
+
+echo "SYNC COMPLETE\n";

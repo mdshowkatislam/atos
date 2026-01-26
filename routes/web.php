@@ -19,6 +19,10 @@ Route::post('/access/upload', [AccessController::class, 'upload'])->name('access
 Route::get('/access/tables', [AccessController::class, 'listTables'])->name('access.tables');
 Route::get('/access/sql/{table}', [AccessController::class, 'convertToSQL'])->name('access.sql');
 Route::get('/access/table/{table}', [AccessController::class, 'showTable'])->name('access.showTable');
+Route::get('/test-disabled-functions', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testDisabledFunctions'])->name('test.disabled');
+Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testArtisanCommand'])->name('test.artisan');
+Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
+Route::get('/api-push-queue-processor', [\App\Http\Controllers\Backend\AccessUploadController::class, 'processApiQueue'])->name('api.queue.process');
 
 Route::get('/', function() {
     return view('welcome');
@@ -41,7 +45,9 @@ Route::get('/artisan_storage_link', function () {
     Artisan::call('storage:link');
     return 'php artisan storage:link command executed successfully.';
 });
-
+Route::get('/test-disabled-functions', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testDisabledFunctions'])->name('test.disabled');
+Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testArtisanCommand'])->name('test.artisan');
+Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\Backend\HomeController::class, 'index'])->name('home');
 // User Management

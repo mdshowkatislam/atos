@@ -1,0 +1,5 @@
+2026-01-24 06:50:09 | ==== START ====
+2026-01-24 06:50:09 | Fetching config...
+2026-01-24 06:50:09 | CONFIG CURL ERROR: SSL certificate problem: unable to get local issuer certificate
+2026-01-24 06:50:09 | MDB PATH FROM CACHE: 
+2026-01-24 06:50:09 | ERROR: No MDB path available

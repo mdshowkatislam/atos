@@ -25,19 +25,30 @@ Project setup rules:
         end when requested, force it to stop ->ok 
         ... .... ....
 
-6) then form right on task scheduler -> Selected Item 
+6) Then form right on task scheduler -> Selected Item 
     i) Enable ( if need)
-    ii) run 
-5) Then Automatic data will sync in the user given time
+    ii) run
 
-6) But for one time User Inof should need to be sync ( and this a queue job, so follow the below steps ):
+5) Then Automatic data will sync in the user given time  ( but it will sync to atos only)
+
+6) But for sync checkinout table to sync in attendance system it will use queue jot so for that you should set a corn job first 
+   time in cpanel. below is the process.
+
+7) At the end just have to add Corn job for sync checkinout table atos to attendance system:
+          
+        Then set up the cron job in cPanel:
+         Go to cPanel → Cron Jobs
+         Add new cron: * * * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1    
+
+
+8) But for one time User Info should need to be sync ( and this a queue job, so follow the below steps ):
     i) open its backend site .
     ii) Goto the settings-> table_management.
     iii) Then userinfo -> view data -> then click sync data 
      iv) Then it will create a job
      v) Run from the terminal "php artisan queue:work --tries-1"
      vi) Then it will sync the users one time.
-
+ 
 ### For User/Client Pc setup : ( How to setup user pc for zktech mdb file upload)
     i) In this system database/php_file_for_upload_mdb_as_sql\zk-sync , folder (zk-sync) is the file
     ii) just copy and pest this "zk-sync" file in "C" drive.

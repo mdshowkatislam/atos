@@ -86,80 +86,61 @@ class AccessUploadController extends Controller
     }
     
     /**
-     * Run sync command in background using popen() (which is enabled)
+     * Run sync command in background using exec() with nohup (which is enabled)
      */
- private function runSyncInBackground($filePath)
-{
-    try {
-        // Detect CLI PHP binary but avoid selecting php-fpm (common on FPM workers)
-        $phpBinary = defined('PHP_BINARY') ? PHP_BINARY : null;
-        if ($phpBinary) {
-            $base = basename($phpBinary);
-            if (stripos($base, 'php-fpm') !== false || stripos($phpBinary, DIRECTORY_SEPARATOR . 'sbin' . DIRECTORY_SEPARATOR) !== false) {
-                // PHP_BINARY points to php-fpm — ignore it and try to find CLI php
-                $phpBinary = null;
-            }
-        }
+    private function runSyncInBackground($filePath)
+    {
+        try {
+            $projectRoot = base_path();
+            $logFile = storage_path('logs/sync_output.log');
 
-        if (!$phpBinary || !is_executable($phpBinary)) {
-            // Common locations for CLI php
-            $possiblePaths = [
-                '/usr/bin/php',
-                '/usr/local/bin/php',
-                '/opt/cpanel/ea-php83/root/usr/bin/php',
+            // Try to find PHP 8.2+ binary
+            $php82Paths = [
                 '/opt/cpanel/ea-php82/root/usr/bin/php',
-                '/opt/cpanel/ea-php83/root/usr/sbin/php',
-                '/opt/cpanel/ea-php82/root/usr/sbin/php',
+                '/opt/cpanel/ea-php83/root/usr/bin/php',
+                '/opt/cpanel/ea-php84/root/usr/bin/php',
+                '/usr/local/bin/php82',
+                '/usr/bin/php82',
             ];
-            foreach ($possiblePaths as $path) {
-                if (is_executable($path) && stripos(basename($path), 'php') !== false && stripos(basename($path), 'php-fpm') === false) {
+
+            $phpBinary = 'php'; // fallback
+            foreach ($php82Paths as $path) {
+                if (is_executable($path)) {
                     $phpBinary = $path;
                     break;
                 }
             }
-        }
 
-        if (!$phpBinary) {
-            // Fallback to `php` in PATH — usually the CLI binary
-            $phpBinary = 'php';
-        }
+            // Change to project directory first, then run artisan command
+            $cmd = 'cd ' . escapeshellarg($projectRoot) . ' && nohup ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
+                   escapeshellarg($filePath) . ' >> ' .
+                   escapeshellarg($logFile) . ' 2>&1 &';
 
-        // Safety: ensure we didn't accidentally pick php-fpm
-        if (stripos(basename($phpBinary), 'php-fpm') !== false) {
-            $phpBinary = 'php';
-        }
+            Log::info('Starting background sync with nohup exec', [
+                'command' => $cmd,
+                'file_path' => $filePath,
+                'project_root' => $projectRoot,
+                'php_binary' => $phpBinary
+            ]);
 
-        $artisanPath = base_path('artisan');
+            // Use exec() to run command in background
+            \exec($cmd, $output, $return_var);
 
-        // Log output to a file instead of /dev/null
-        $logFile = storage_path('logs/sync_output.log');
+            Log::info('Background sync exec result', [
+                'return_code' => $return_var,
+                'output' => implode("\n", $output)
+            ]);
 
-        $cmd = escapeshellarg($phpBinary) . ' ' .
-               escapeshellarg($artisanPath) . ' access:sync --file=' .
-               escapeshellarg($filePath) . ' >> ' .
-               escapeshellarg($logFile) . ' 2>&1 &';
-
-        Log::info('Starting background sync with popen', [
-            'command' => $cmd,
-            'file_path' => $filePath
-        ]);
-
-        $handle = popen($cmd, 'r');
-        if ($handle) {
-            Log::info('Background sync started with popen');
-            pclose($handle);
+            Log::info('Background sync started with nohup');
             $this->storeProcessInfo(0, $filePath);
-        } else {
-            Log::error('Failed to start process with popen');
-        }
 
-    } catch (\Exception $e) {
-        Log::error('Failed to start background sync', [
-            'error' => $e->getMessage(),
-            'file_path' => $filePath
-        ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to start background sync', [
+                'error' => $e->getMessage(),
+                'file_path' => $filePath
+            ]);
+        }
     }
-}
 
 
     
@@ -177,5 +158,187 @@ class AccessUploadController extends Controller
         ];
         
         file_put_contents($infoFile, json_encode($info, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Test endpoint - Check disabled functions
+     */
+    public function testDisabledFunctions()
+    {
+        $disabled = ini_get('disable_functions');
+        return response()->json([
+            'disabled_functions' => $disabled ?: 'None disabled',
+            'popen_enabled' => function_exists('popen') ? 'Yes' : 'No',
+            'proc_open_enabled' => function_exists('proc_open') ? 'Yes' : 'No',
+            'shell_exec_enabled' => function_exists('shell_exec') ? 'Yes' : 'No',
+            'exec_enabled' => function_exists('exec') ? 'Yes' : 'No',
+        ]);
+    }
+
+    /**
+     * Test endpoint - Test artisan command directly
+     */
+    public function testArtisanCommand()
+    {
+        $projectRoot = base_path();
+        $testFile = storage_path('app/public/access/incoming.sql');
+        
+        // Try to find PHP 8.2+ binary
+        $php82Paths = [
+            '/opt/cpanel/ea-php82/root/usr/bin/php',
+            '/opt/cpanel/ea-php83/root/usr/bin/php',
+            '/opt/cpanel/ea-php84/root/usr/bin/php',
+            '/usr/local/bin/php82',
+            '/usr/bin/php82',
+        ];
+
+        $phpBinary = 'php'; // fallback
+        foreach ($php82Paths as $path) {
+            if (is_executable($path)) {
+                $phpBinary = $path;
+                break;
+            }
+        }
+        
+        Log::info('Testing artisan command', [
+            'project_root' => $projectRoot,
+            'test_file' => $testFile,
+            'file_exists' => file_exists($testFile),
+            'php_binary' => $phpBinary
+        ]);
+
+        $cmd = 'cd ' . escapeshellarg($projectRoot) . ' && ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
+               escapeshellarg($testFile);
+
+        Log::info('Test command: ' . $cmd);
+
+        \exec($cmd . ' 2>&1', $output, $return_var);
+
+        return response()->json([
+            'command' => $cmd,
+            'return_code' => $return_var,
+            'output' => implode("\n", $output),
+            'project_root' => $projectRoot,
+            'php_binary' => $phpBinary,
+            'php_binary_exists' => is_executable($phpBinary),
+            'test_file_exists' => file_exists($testFile)
+        ]);
+    }
+
+    /**
+     * Test endpoint - Check cURL status
+     */
+    public function testCurlStatus()
+    {
+        $curlEnabled = extension_loaded('curl');
+        $curlVersion = null;
+        $curlInfo = null;
+
+        if ($curlEnabled && function_exists('curl_version')) {
+            $curlVersion = curl_version();
+            $curlInfo = [
+                'version' => $curlVersion['version'] ?? 'Unknown',
+                'ssl_version' => $curlVersion['ssl_version_number'] ?? 'Unknown',
+                'host' => $curlVersion['host'] ?? 'Unknown',
+            ];
+        }
+
+        return response()->json([
+            'curl_enabled' => $curlEnabled ? 'Yes' : 'No',
+            'curl_extension_loaded' => extension_loaded('curl') ? 'Yes' : 'No',
+            'curl_function_exists' => function_exists('curl_init') ? 'Yes' : 'No',
+            'curl_info' => $curlInfo,
+            'allow_url_fopen' => ini_get('allow_url_fopen') ? 'Yes' : 'No',
+            'disabled_functions' => ini_get('disable_functions') ?: 'None',
+        ]);
+    }
+
+    /**
+     * Process queued API pushes (runs in web environment with cURL)
+     */
+    public function processApiQueue()
+    {
+        $endpoint = config('api_url.endpoint') . '/accessBdStore';
+
+        Log::info('API Queue Processor Started', [
+            'endpoint' => $endpoint,
+            'curl_available' => function_exists('curl_init') ? 'YES' : 'NO',
+        ]);
+
+        // Get pending items from queue
+        $pendingItems = \DB::table('api_push_queue')
+            ->where('status', 'pending')
+            ->orWhere(function($q) {
+                $q->where('status', 'failed')->where('retry_count', '<', 3);
+            })
+            ->limit(50)
+            ->get();
+
+        if ($pendingItems->isEmpty()) {
+            Log::info('No pending items in queue');
+            return response()->json(['status' => 'ok', 'processed' => 0]);
+        }
+
+        $processed = 0;
+        $failed = 0;
+
+        foreach ($pendingItems as $item) {
+            try {
+                $data = json_decode($item->student_data, true);
+
+                Log::info('Processing queue item', [
+                    'id' => $item->id,
+                    'records' => count($data['studentData'] ?? []),
+                ]);
+
+                $response = \Illuminate\Support\Facades\Http::timeout(30)
+                    ->withOptions(['verify' => false])
+                    ->post($endpoint, $data);
+
+                if ($response->successful()) {
+                    \DB::table('api_push_queue')
+                        ->where('id', $item->id)
+                        ->update([
+                            'status' => 'sent',
+                            'updated_at' => now(),
+                        ]);
+
+                    Log::info('Queue item sent successfully', [
+                        'id' => $item->id,
+                        'status' => $response->status(),
+                    ]);
+
+                    $processed++;
+                } else {
+                    throw new \Exception('HTTP ' . $response->status());
+                }
+            } catch (\Throwable $e) {
+                $retryCount = $item->retry_count + 1;
+
+                \DB::table('api_push_queue')
+                    ->where('id', $item->id)
+                    ->update([
+                        'status' => 'failed',
+                        'retry_count' => $retryCount,
+                        'last_error' => $e->getMessage(),
+                        'updated_at' => now(),
+                    ]);
+
+                Log::error('Queue item failed', [
+                    'id' => $item->id,
+                    'error' => $e->getMessage(),
+                    'retry_count' => $retryCount,
+                ]);
+
+                $failed++;
+            }
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'processed' => $processed,
+            'failed' => $failed,
+            'total_items' => count($pendingItems),
+        ]);
     }
 }
