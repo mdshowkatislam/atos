@@ -12,7 +12,7 @@ class AccessUploadController extends Controller
     
     public function upload(Request $request)
     {
-        Log::info("UUUU1");
+        // Log::info("UUUU1");
         // Simple API key check
         $authHeader = $request->header('Authorization');
         if (!$authHeader || $authHeader !== 'Bearer ' . $this->apiKey) {
@@ -27,12 +27,6 @@ class AccessUploadController extends Controller
         }
 
         $file = $request->file('mdb_file');
-        
-        Log::info('MDB Upload started', [
-            'name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'ip' => $request->ip()
-        ]);
 
         try {
             // Save uploaded file to server storage
@@ -48,19 +42,19 @@ class AccessUploadController extends Controller
             if ($isSql) {
                 $file->move($destDir, 'incoming.sql');
                 $fullPath = $destDir . DIRECTORY_SEPARATOR . 'incoming.sql';
-                Log::info("FILE MOVED TO: " . $fullPath);
+                // Log::info("FILE MOVED TO: " . $fullPath);
             } else {
                 // default to preserving legacy behaviour for MDB uploads
                 $file->move($destDir, 'incoming.mdb');
                 $fullPath = $destDir . DIRECTORY_SEPARATOR . 'incoming.mdb';
-                Log::info("FILE MOVED TO: " . $fullPath);
+                // Log::info("FILE MOVED TO: " . $fullPath);
             }
             
             $fileSize = filesize($fullPath);
-            Log::info('File saved successfully', [
-                'path' => $fullPath,
-                'size' => $fileSize
-            ]);
+            // Log::info('File saved successfully', [
+            //     'path' => $fullPath,
+            //     'size' => $fileSize
+            // ]);
 
             // ✅ Run sync command IN BACKGROUND using popen() with & at the end
             $this->runSyncInBackground($fullPath);
@@ -126,12 +120,13 @@ class AccessUploadController extends Controller
             // Use exec() to run command in background
             \exec($cmd, $output, $return_var);
 
-            Log::info('Background sync exec result', [
-                'return_code' => $return_var,
-                'output' => implode("\n", $output)
-            ]);
+            // Log::info('Background sync exec result', [
+            //     'return_code' => $return_var,
+            //     'output' => implode("\n", $output)
+            // ]);
 
-            Log::info('Background sync started with nohup');
+            // Log::info('Background sync started with nohup');
+
             $this->storeProcessInfo(0, $filePath);
 
         } catch (\Exception $e) {
@@ -200,17 +195,17 @@ class AccessUploadController extends Controller
             }
         }
         
-        Log::info('Testing artisan command', [
-            'project_root' => $projectRoot,
-            'test_file' => $testFile,
-            'file_exists' => file_exists($testFile),
-            'php_binary' => $phpBinary
-        ]);
+        // Log::info('Testing artisan command', [
+        //     'project_root' => $projectRoot,
+        //     'test_file' => $testFile,
+        //     'file_exists' => file_exists($testFile),
+        //     'php_binary' => $phpBinary
+        // ]);
 
         $cmd = 'cd ' . escapeshellarg($projectRoot) . ' && ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
                escapeshellarg($testFile);
 
-        Log::info('Test command: ' . $cmd);
+        // Log::info('Test command: ' . $cmd);
 
         \exec($cmd . ' 2>&1', $output, $return_var);
 
@@ -260,10 +255,10 @@ class AccessUploadController extends Controller
     {
         $endpoint = config('api_url.endpoint') . '/accessBdStore';
 
-        Log::info('API Queue Processor Started', [
-            'endpoint' => $endpoint,
-            'curl_available' => function_exists('curl_init') ? 'YES' : 'NO',
-        ]);
+        // Log::info('API Queue Processor Started', [
+        //     'endpoint' => $endpoint,
+        //     'curl_available' => function_exists('curl_init') ? 'YES' : 'NO',
+        // ]);
 
         // Get pending items from queue
         $pendingItems = \DB::table('api_push_queue')
@@ -286,10 +281,10 @@ class AccessUploadController extends Controller
             try {
                 $data = json_decode($item->student_data, true);
 
-                Log::info('Processing queue item', [
-                    'id' => $item->id,
-                    'records' => count($data['studentData'] ?? []),
-                ]);
+                // Log::info('Processing queue item', [
+                //     'id' => $item->id,
+                //     'records' => count($data['studentData'] ?? []),
+                // ]);
 
                 $response = \Illuminate\Support\Facades\Http::timeout(30)
                     ->withOptions(['verify' => false])
@@ -303,10 +298,10 @@ class AccessUploadController extends Controller
                             'updated_at' => now(),
                         ]);
 
-                    Log::info('Queue item sent successfully', [
-                        'id' => $item->id,
-                        'status' => $response->status(),
-                    ]);
+                    // Log::info('Queue item sent successfully', [
+                    //     'id' => $item->id,
+                    //     'status' => $response->status(),
+                    // ]);
 
                     $processed++;
                 } else {

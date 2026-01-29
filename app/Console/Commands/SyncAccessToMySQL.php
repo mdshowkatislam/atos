@@ -16,12 +16,12 @@ class SyncAccessToMySQL extends Command
 
    public function handle()
 {
-    Log::info('================ access:sync START ================');
-    Log::info('Command invoked', [
-        'file_option' => $this->option('file'),
-        'php_sapi' => php_sapi_name(),
-        'pid' => getmypid(),
-    ]);
+    // Log::info('================ access:sync START ================');
+    // Log::info('Command invoked', [
+    //     'file_option' => $this->option('file'),
+    //     'php_sapi' => php_sapi_name(),
+    //     'pid' => getmypid(),
+    // ]);
 
     $lockFile = storage_path('logs/access_sync.lock');
 
@@ -32,11 +32,11 @@ class SyncAccessToMySQL extends Command
         $lockTime = isset($lockData['time']) ? strtotime($lockData['time']) : 0;
         $lockAgeSeconds = time() - $lockTime;
 
-        Log::info('Lock file analysis', [
-            'previous_pid' => $previousPid,
-            'lock_age_seconds' => $lockAgeSeconds,
-            'lock_time' => $lockData['time'] ?? 'unknown',
-        ]);
+        // Log::info('Lock file analysis', [
+        //     'previous_pid' => $previousPid,
+        //     'lock_age_seconds' => $lockAgeSeconds,
+        //     'lock_time' => $lockData['time'] ?? 'unknown',
+        // ]);
 
         // If lock is older than 300 seconds (5 minutes), consider it stale
         if ($lockAgeSeconds > 300) {
@@ -78,14 +78,14 @@ class SyncAccessToMySQL extends Command
     // Create lock file
     $myPid = getmypid();
     file_put_contents($lockFile, json_encode(['pid' => $myPid, 'time' => now()->toDateTimeString()]));
-    Log::info('Lock file created', ['pid' => $myPid]);
+    // Log::info('Lock file created', ['pid' => $myPid]);
 
     try {
         $cliFile = $this->option('file');
         $settings = ScheduledSetting::first();
 
         if (!$settings && !$cliFile) {
-            Log::error('No scheduled_settings row found and no --file provided');
+            // Log::error('No scheduled_settings row found and no --file provided');
             return Command::SUCCESS;
         }
 
@@ -109,7 +109,7 @@ class SyncAccessToMySQL extends Command
             };
 
             if (!$shouldRun) {
-                Log::info('Skipped due to schedule');
+                // Log::info('Skipped due to schedule');
                 return Command::SUCCESS;
             }
         }
@@ -117,11 +117,11 @@ class SyncAccessToMySQL extends Command
         // SQL import
         $accessFile = $cliFile ?: storage_path('app/public/access/incoming.sql');
         if (!file_exists($accessFile)) {
-            Log::error('SQL file not found', ['path' => $accessFile]);
+            // Log::error('SQL file not found', ['path' => $accessFile]);
             return Command::FAILURE;
         }
 
-        Log::info('SQL import starting', ['file' => $accessFile, 'size' => filesize($accessFile)]);
+        // Log::info('SQL import starting', ['file' => $accessFile, 'size' => filesize($accessFile)]);
 
         DB::beginTransaction();
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
@@ -142,11 +142,9 @@ class SyncAccessToMySQL extends Command
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
         if (DB::getPdo()->inTransaction()) DB::commit();
-        Log::info('DB transaction committed');
+        // Log::info('DB transaction committed');
 
         // Prepare student data in chunks
-        Log::info('Preparing student data');
-
         $endpoint = config('api_url.endpoint') . '/accessBdStore';
         $chunkSize = 1000;
 
@@ -175,18 +173,18 @@ class SyncAccessToMySQL extends Command
                         'updated_at' => now(),
                     ]);
 
-                    Log::info('Batch queued for API push', [
-                        'batch_num' => $batchCount,
-                        'records' => count($batch),
-                    ]);
+                    // Log::info('Batch queued for API push', [
+                    //     'batch_num' => $batchCount,
+                    //     'records' => count($batch),
+                    // ]);
                 }
             });
 
-        Log::info('All batches queued', ['total_batches' => $batchCount]);
+        // Log::info('All batches queued', ['total_batches' => $batchCount]);
 
         if ($settings) $settings->update(['last_sync' => now()]);
 
-        Log::info('================ access:sync COMPLETED ================');
+        // Log::info('================ access:sync COMPLETED ================');
         return Command::SUCCESS;
 
     } catch (\Throwable $e) {
@@ -197,7 +195,7 @@ class SyncAccessToMySQL extends Command
         return Command::FAILURE;
     } finally {
         @unlink($lockFile);
-        Log::info('Lock file removed');
+        // Log::info('Lock file removed');
     }
 }
 
@@ -253,8 +251,8 @@ class SyncAccessToMySQL extends Command
             throw new \Exception('Stream API call failed');
         }
 
-        Log::info('API response (stream)', [
-            'body' => substr($response, 0, 300),
-        ]);
+        // Log::info('API response (stream)', [
+        //     'body' => substr($response, 0, 300),
+        // ]);
     }
 }

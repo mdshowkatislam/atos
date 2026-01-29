@@ -25,3 +25,4 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
     }
+}
