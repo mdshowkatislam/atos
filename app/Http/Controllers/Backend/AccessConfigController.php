@@ -13,7 +13,7 @@ class AccessConfigController extends Controller
 {
     public function config(Request $request)
     {
-        //    Log::info('QQQ');
+           Log::info('QQQ');
 
         $settings = ScheduledSetting::first();
         

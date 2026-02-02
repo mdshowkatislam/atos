@@ -130,11 +130,6 @@ class AccessController extends Controller
 {
     $dbPath = session('access_db');
     $connStr = "Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=$dbPath;";
-    dd([
-        'path' => $dbPath,
-        'exists' => file_exists($dbPath),
-        'connStr' => $connStr,
-    ]);
     $conn = odbc_connect($connStr, '', ''); // here i am getting false , means no connection . why ?
    
     if (!$conn) {

@@ -46,6 +46,7 @@ class DatabaseController extends Controller
     public function updateSchedule(Request $request)
     {
         Log::info('updatehit');
+        Log::info($request->all());
         $isApi = $request->route() && str_starts_with($request->route()->getPrefix(), 'api');
 
         if ($isApi) {

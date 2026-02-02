@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 
 class SyncAccessToMySQL extends Command
 {
-    protected $signature = 'access:sync {--file=}';
+    protected $signature = 'access:sync {--file=} {--new}';
     protected $description = 'Sync Access SQL data to MySQL and push to API';
 
    public function handle()
@@ -80,8 +80,22 @@ class SyncAccessToMySQL extends Command
     file_put_contents($lockFile, json_encode(['pid' => $myPid, 'time' => now()->toDateTimeString()]));
     // Log::info('Lock file created', ['pid' => $myPid]);
 
-    try {
+        try {
         $cliFile = $this->option('file');
+        $isNewMode = (bool) $this->option('new');
+        $prevMax = 0;
+        if ($isNewMode) {
+            try {
+                if (DB::getSchemaBuilder()->hasTable('checkinout')) {
+                    $prevMax = (int) DB::table('checkinout')->max('id');
+                }
+            } catch (\Throwable $e) {
+                // Table might not exist yet; keep prevMax = 0
+                Log::info('access:sync new mode check failed', ['error' => $e->getMessage()]);
+                $prevMax = 0;
+            }
+            Log::info('access:sync running in new-only mode', ['prev_max_id' => $prevMax]);
+        }
         $settings = ScheduledSetting::first();
 
         if (!$settings && !$cliFile) {
@@ -151,6 +165,9 @@ class SyncAccessToMySQL extends Command
         $batchCount = 0;
         DB::table('checkinout as c')
             ->join('userinfo as u', 'c.USERID', '=', 'u.USERID')
+            ->when($isNewMode, function($q) use ($prevMax) {
+                return $q->where('c.id', '>', $prevMax);
+            })
             ->orderBy('c.CHECKTIME')
             ->chunk($chunkSize, function($rows) use (&$batchCount) {
                 $batch = [];

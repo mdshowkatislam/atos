@@ -80,7 +80,8 @@ class AccessUploadController extends Controller
     }
     
     /**
-     * Run sync command in background using exec() with nohup (which is enabled)
+     * Run sync command in background using OS-specific methods
+     * Detects Windows vs Unix/Linux and uses appropriate process launching
      */
     private function runSyncInBackground($filePath)
     {
@@ -88,7 +89,18 @@ class AccessUploadController extends Controller
             $projectRoot = base_path();
             $logFile = storage_path('logs/sync_output.log');
 
-            // Try to find PHP 8.2+ binary
+            // Detect OS type
+            $osType = strtoupper(substr(php_uname('s'), 0, 3)); // WIN for Windows, LIN for Linux, DAR for macOS
+            $isWindows = $osType === 'WIN';
+
+            Log::info('OS Detection', [
+                'os_type' => $osType,
+                'is_windows' => $isWindows ? 'Yes' : 'No',
+                'php_uname' => php_uname('s'),
+                'php_os_family' => defined('PHP_OS_FAMILY') ? PHP_OS_FAMILY : 'Unknown',
+            ]);
+
+            // Try to find PHP 8.2+ binary (for Unix/Linux)
             $php82Paths = [
                 '/opt/cpanel/ea-php82/root/usr/bin/php',
                 '/opt/cpanel/ea-php83/root/usr/bin/php',
@@ -98,41 +110,83 @@ class AccessUploadController extends Controller
             ];
 
             $phpBinary = 'php'; // fallback
-            foreach ($php82Paths as $path) {
-                if (is_executable($path)) {
-                    $phpBinary = $path;
-                    break;
+            if (!$isWindows) {
+                foreach ($php82Paths as $path) {
+                    if (is_executable($path)) {
+                        $phpBinary = $path;
+                        break;
+                    }
                 }
             }
 
-            // Change to project directory first, then run artisan command
-            $cmd = 'cd ' . escapeshellarg($projectRoot) . ' && nohup ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
-                   escapeshellarg($filePath) . ' >> ' .
-                   escapeshellarg($logFile) . ' 2>&1 &';
+            if ($isWindows) {
+                // ===== WINDOWS: Use start /B for background process =====
+                  $cmd = 'start /B ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
+                      escapeshellarg($filePath) . ' --new >> ' .
+                      escapeshellarg($logFile) . ' 2>&1';
 
-            Log::info('Starting background sync with nohup exec', [
-                'command' => $cmd,
-                'file_path' => $filePath,
-                'project_root' => $projectRoot,
-                'php_binary' => $phpBinary
-            ]);
+                Log::info('Starting background sync on Windows', [
+                    'command' => $cmd,
+                    'file_path' => $filePath,
+                    'project_root' => $projectRoot,
+                    'php_binary' => $phpBinary,
+                    'working_directory' => getcwd()
+                ]);
 
-            // Use exec() to run command in background
-            \exec($cmd, $output, $return_var);
+                // Change to project directory before executing
+                $originalDir = getcwd();
+                chdir($projectRoot);
 
-            // Log::info('Background sync exec result', [
-            //     'return_code' => $return_var,
-            //     'output' => implode("\n", $output)
-            // ]);
+                // Execute with start /B (background on Windows)
+                \pclose(\popen($cmd, 'r'));
 
-            // Log::info('Background sync started with nohup');
+                chdir($originalDir);
 
-            $this->storeProcessInfo(0, $filePath);
+                // On Windows, we cannot reliably capture PID, so store 0 with a note
+                Log::info('Background sync started on Windows (PID unavailable on Windows)', [
+                    'file_path' => $filePath,
+                    'note' => 'Windows does not expose PID via popen/start /B'
+                ]);
+
+                $this->storeProcessInfo(0, $filePath);
+
+            } else {
+                // ===== UNIX/LINUX: Use nohup with PID capture =====
+                // Command to run in background and capture PID
+                  $cmd = 'cd ' . escapeshellarg($projectRoot) . ' && nohup ' . escapeshellarg($phpBinary) . ' artisan access:sync --file=' .
+                      escapeshellarg($filePath) . ' --new >> ' .
+                      escapeshellarg($logFile) . ' 2>&1 & echo $!';
+
+                Log::info('Starting background sync on Unix/Linux', [
+                    'command' => $cmd,
+                    'file_path' => $filePath,
+                    'project_root' => $projectRoot,
+                    'php_binary' => $phpBinary
+                ]);
+
+                // Use exec() to run command and capture PID
+                \exec($cmd, $output, $return_var);
+
+                // Last line of output should be the PID
+                $pid = 0;
+                if (!empty($output)) {
+                    $pid = (int) trim(end($output));
+                }
+
+                Log::info('Background sync exec result on Unix/Linux', [
+                    'return_code' => $return_var,
+                    'output' => implode("\n", $output),
+                    'captured_pid' => $pid
+                ]);
+
+                $this->storeProcessInfo($pid, $filePath);
+            }
 
         } catch (\Exception $e) {
             Log::error('Failed to start background sync', [
                 'error' => $e->getMessage(),
-                'file_path' => $filePath
+                'file_path' => $filePath,
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
@@ -144,15 +198,29 @@ class AccessUploadController extends Controller
      */
     private function storeProcessInfo($pid, $filePath)
     {
-        $infoFile = storage_path('app/access/sync_info.json');
-        $info = [
-            'pid' => $pid,
-            'file' => basename($filePath),
-            'started_at' => date('Y-m-d H:i:s'),
-            'file_size' => filesize($filePath)
-        ];
-        
-        file_put_contents($infoFile, json_encode($info, JSON_PRETTY_PRINT));
+        try {
+            $infoDir = storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'access');
+            if (!file_exists($infoDir)) {
+                mkdir($infoDir, 0755, true);
+            }
+
+            $infoFile = $infoDir . DIRECTORY_SEPARATOR . 'sync_info.json';
+            $info = [
+                'pid' => $pid,
+                'file' => basename($filePath),
+                'started_at' => date('Y-m-d H:i:s'),
+                'file_size' => filesize($filePath)
+            ];
+
+            file_put_contents($infoFile, json_encode($info, JSON_PRETTY_PRINT));
+
+            Log::info('Process info stored', ['info_file' => $infoFile, 'info' => $info]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to write sync info', [
+                'error' => $e->getMessage(),
+                'file_path' => $filePath,
+            ]);
+        }
     }
 
     /**
@@ -266,7 +334,7 @@ class AccessUploadController extends Controller
             ->orWhere(function($q) {
                 $q->where('status', 'failed')->where('retry_count', '<', 3);
             })
-            ->limit(50)
+            ->limit(500)
             ->get();
 
         if ($pendingItems->isEmpty()) {
