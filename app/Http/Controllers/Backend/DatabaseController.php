@@ -106,33 +106,36 @@ class DatabaseController extends Controller
 
     public function showTable()
     {
-        Log::info('YYYY');
         try {
-            // $data = DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+            $dbName = config('database.connections.mysql.database');
 
-            $data = DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? 
-            
-            AND TABLE_NAME IN (?,?)', ['bidyapith_atos', 'checkinout', 'userinfo']);  // $data = \DB::select('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ', ['atos']);
+            $data = DB::select(
+                'SELECT TABLE_NAME 
+             FROM INFORMATION_SCHEMA.TABLES 
+             WHERE TABLE_SCHEMA = ? 
+             AND TABLE_NAME IN (?, ?)',
+                [$dbName, 'checkinout', 'userinfo']
+            );
+
             $result = [];
 
             foreach ($data as $table) {
                 $columns = DB::select("SHOW COLUMNS FROM `$table->TABLE_NAME`");
+
                 $result[] = [
                     'name' => $table->TABLE_NAME,
                     'columns' => array_map(fn($col) => $col->Field, $columns),
                 ];
             }
         } catch (QueryException $e) {
-            Log::error('API push failed', [
+            Log::error('Fetching table structure failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
-            dd($e, $e->getMessage());
-            return redirect()->back()->with('error', 'Could not fetch columns.(From Controller)');
-        }
 
-        // dd($result);
-        // dd($result[0]['name']);
+            return redirect()
+                ->back()
+                ->with('error', 'Could not fetch database tables');
+        }
 
         return view('backend.database.table', compact('result'));
     }

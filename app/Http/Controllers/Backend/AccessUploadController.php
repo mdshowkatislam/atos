@@ -404,4 +404,17 @@ class AccessUploadController extends Controller
             'total_items' => count($pendingItems),
         ]);
     }
+
+    public function uploadFullSqlFile(Request $request)
+    {
+        Log::info('TTT', [
+            'has_file' => $request->hasFile('sql_file') ? 'Yes' : 'No',
+        ]);
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'This is a placeholder for uploadFullSqlFile method.',
+            'data' => $request->all()   
+        ]);
+
+    }
 }

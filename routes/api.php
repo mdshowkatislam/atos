@@ -29,6 +29,7 @@ Route::middleware('access.token')->group(function () {
 
     // Upload MDB file from local PC
     Route::post('access/upload', [AccessUploadController::class, 'upload']);
+    Route::post('access/fullSqlFileupload', [AccessUploadController::class, 'uploadFullSqlFile']);
 
 
 });
