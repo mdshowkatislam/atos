@@ -1,123 +1,200 @@
-========================================================
-============   🎯 Project setup rules: ================
-========================================================
-1) C:\wamp64\bin\php\php8.2.26\ext 
-      check if there the below two .dll file are existed.
-        i) pdo_odbc.dll
-        ii) php_pdo_odbc.dll 
-2) Need php.ini file extensions not commented : 
-    
-         i)  extension=php_pdo_odbc
-         ii) extension=pdo_odbc
-         iii) extension=odbc
-3) check API_ENDPOINT in .env file 
+==========================================================================
+🎯  ATOS → ATTENDANCE SYSTEM : SETUP GUIDE
+==========================================================================
 
-4) Setup the windows Task Scheduler as below :
-        i) create a new task: give and and description.
-       ii) Then trigers Tab->Begin the task =On a Schedule -> from button "New"-> then setup settings->daily
-      iii) Then Advance settings-> Repeat task every day -> 1 minutes ( don't worry this is for just mdb file upload)->for a duration of= Indefinitely
-       iv) Then Enable -> then ok .
-        v) Then go Action tab->new-> Action = "start a program".
-       vi) From Setting ->Program/script:->php ( you can brows for you php location)
-      vii) Add arguments( optional):-> C:\zk-sync\sync_access.php (this php script location ,   which will be in local pc).
-     viii)  Start in ( optional) ;-> C:\wamp64\www\atosql (( this is program app location )).
-       ix) Conditions-> Power -> select 1st 2( start task .. on Ac power & stop if the .. battery power)
-        x) Settings-> Allow task to be run on demand && if the runnig task does not 
-        end when requested, force it to stop ->ok 
-        ... .... ....
-
-6) Then form right on task scheduler -> Selected Item 
-         i) Enable ( if need)
-        ii) run
-
-5) Then Automatic data will sync in the user given time  ( but it will sync to atos only)
-
-6) But for sync checkinout table to sync in attendance system it will use queue jot so for that you should set a corn job first 
-   time in cpanel. below is the process.
-
-7) At the end just have to add Corn job for sync checkinout table atos to attendance system:
-          
-        Then set up the cron job in cPanel:
-         Go to cPanel → Cron Jobs
-         Add new cron: * * * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1    
+📌 Flow of data:
+   1) Windows Task Scheduler (client PC) uploads the .mdb data to ATOS every minute or dalily as per setup.
+   2) A queue job pushes the checkinout table from ATOS to the attendance system.
+   3) A cPanel cron job keeps that queue processor running.
 
 
-8) But for one time User Info should need to be sync ( and this a queue job, so follow the below steps ):
-        i) open its backend site .
-       ii) Goto the settings-> table_management.
-      iii) Then userinfo -> view data -> then click sync data 
-       iv) Then it will create a job
-        v) Run from the terminal "php artisan queue:work --tries-1"
-       vi) Then it will sync the users one time.
+==========================================================================
+🖥️  PART 1 : SERVER / DEVELOPER PC SETUP
+==========================================================================
 
-🪜🪜  For User/Client Pc setup : ( How to setup user pc for zktech mdb file upload)
-    i) In this system database/php_file_for_upload_mdb_as_sql\zk-sync , folder (zk-sync) is the file
-    ii) just copy and pest this "zk-sync" file in "C" drive.
-    iii) and Confirm the Php installed and Php location is setup in Environment variable in client pc
-          to read this file.
+📂 1.1  Check the PHP ODBC extension files
+   Folder: C:\wamp64\bin\php\php8.2.26\ext
+   Confirm both files exist:
+      ✅ pdo_odbc.dll
+      ✅ php_pdo_odbc.dll
 
-===================================================================================
-=================== 🩺 Imporant Debuging Web Routs Form Projects 🩺  =======================
-===================================================================================
+⚙️ 1.2  Configure php.ini
+   ⚠️ Be very careful: enable ONLY the first two lines. Do NOT enable all the ODBC entries.
 
-Route::get('/test-disabled-functions', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testDisabledFunctions'])->name('test.disabled');
-Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testArtisanCommand'])->name('test.artisan');
-Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
-Route::get('/api-push-queue-processor', [\App\Http\Controllers\Backend\AccessUploadController::class, 'processApiQueue'])->name('api.queue.process');
+      ✅ extension=odbc
+      ✅ extension=pdo_odbc
+      ❌ ;extension=php_odbc.dll
+      ❌ ;extension=php_pdo_odbc.dll
 
+   (First two = active, no semicolon.  Last two = stay commented, keep the semicolon.)
 
-// For Artisan Command Run in Server
-Route::get('/log', function () {
-    Log::debug('This is a debug log test');
-    return 'Log written!';
-});
-Route::get('/artisan_migrate', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    return 'php artisan migrate command executed successfully.';
-});
-Route::get('/artisan_optimize', function () {
-    Artisan::call('optimize:clear');
-    Artisan::call('optimize');
-    Log::debug('This is a optimize test');
-    return 'php artisan optimize command executed successfully.';
-});
-Route::get('/artisan_storage_link', function () {
-    Artisan::call('storage:link');
-    Log::info(Artisan::output());
-    return 'php artisan storage:link command executed successfully.';
-});
-Route::get('/artisan_sync', function () {
-    Artisan::call('access:sync');
-    Log::info(Artisan::output());
-    return 'php artisan access:sync command executed successfully.';
-});
-
-Route::get('/queue_work', function () {
-    Artisan::call('queue:work', [
-        '--once' => true,
-        '--tries' => 1,
-    ]);
-
-    return 'Queue worker ran once';
-});
+🔑 1.3  Check the .env file
+   Make sure API_ENDPOINT is set correctly.
 
 
-===================================================================================
-===================         ⏰  All 5 Corn Jobs  ⏰           ====================
-===================================================================================
+==========================================================================
+⏱️  PART 2 : WINDOWS TASK SCHEDULER  (MDB upload to ATOS)
+==========================================================================
 
-9:15 AM
-2:00 PM (14:00)
-3:30 PM (15:30)
-4:00 PM (16:00) 
-5:00 PM (17:00) 
+📝 2.1  Create the task
+   ▸ Create a new task, then give it a name and a description.
+
+📅 2.2  Triggers tab
+   ▸ Click "New".
+   ▸ Begin the task: On a schedule  →  Daily.
+   ▸ Advanced settings: tick "Repeat task every" → 1 minute.
+     (Don't worry, this is only for the .mdb file upload.)
+   ▸ For a duration of: Indefinitely.
+   ▸ Tick "Enabled", then click OK.
+
+🚀 2.3  Actions tab
+   ▸ Click "New". Action = "Start a program".
+   ▸ Program/script   : php   (or browse to your PHP location)
+   ▸ Add arguments    : C:\zk-sync\sync_access.php   (script location on the local PC)
+   ▸ Start in         : C:\wamp64\www\atosql         (application location)
+
+🔋 2.4  Conditions tab  →  Power
+   ▸ Tick the first two options:
+      ☑ Start the task only if the computer is on AC power
+      ☑ Stop if the computer switches to battery power
+
+🛠️ 2.5  Settings tab
+   ▸ ☑ Allow task to be run on demand
+   ▸ ☑ If the running task does not end when requested, force it to stop
+   ▸ Click OK.
+
+▶️ 2.6  Run the task
+   ▸ In Task Scheduler, open the right panel → "Selected Item".
+   ▸ Enable the task (if needed).
+   ▸ Click Run.
+
+   ✅ Data will now sync automatically, but ONLY to ATOS.
 
 
-//// commands are ( for server only ) :
-15 9  * * *   curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
-0  14 * * *   curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
-30 15 * * *   curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
-0  16 * * *   curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
-0  17 * * *   curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+==========================================================================
+🔄  PART 3 : SYNC checkinout TABLE TO THE ATTENDANCE SYSTEM
+==========================================================================
 
- 
+📌 This sync uses a QUEUE JOB, so a cron job must be set up in cPanel.
+   Go to: cPanel → Cron Jobs → Add new cron job.
+   Use ONE of the two options below.
+
+🔁 Option A : Run every minute
+
+   * * * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+🕘 Option B : Run at 5 fixed times a day  (server only)
+
+   ⏰ 9:15 AM  (09:15)
+   15 9  * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+   ⏰ 2:00 PM  (14:00)
+   0 14 * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+   ⏰ 3:30 PM  (15:30)
+   30 15 * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+   ⏰ 4:00 PM  (16:00)
+   0 16 * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+   ⏰ 5:00 PM  (17:00)
+   0 17 * * * curl -s http://jmagc-atos.bidyapith.com/api-push-queue-processor >> /dev/null 2>&1
+
+
+==========================================================================
+👤  PART 4 : ONE-TIME USER INFO SYNC  (also a queue job)
+==========================================================================
+
+   1️⃣  Open the backend site.
+   2️⃣  Go to: Settings → table_management.
+   3️⃣  Find "userinfo" → View Data → click "Sync Data". This creates a job.
+   4️⃣  Run this in the terminal:
+
+          php artisan queue:work --tries=1
+
+   5️⃣  The users will now sync one time. ✅
+
+
+==========================================================================
+💻  PART 5 : CLIENT PC SETUP  (ZKTeco MDB file upload)
+==========================================================================
+
+   1️⃣  Find the "zk-sync" folder in this project:
+          database/php_file_for_upload_mdb_as_sql/zk-sync
+
+   2️⃣  Copy the "zk-sync" folder to the C: drive of the client PC:
+          C:\zk-sync
+
+   3️⃣  Confirm PHP is installed on the client PC and its location is added
+       to the PATH environment variable, so the script can run.
+
+
+==========================================================================
+🩺  PART 6 : CLIENT PC SETUP   (Windows ODBC 64bit installation and checkup)
+==========================================================================
+1️⃣  Open cmd in client pc , then run C:\Windows\System32\odbcad32.exe , this command .
+     after openning the odbc installed window then click on drive , check if there have adjectly 
+     Microsoft Access Driver (*.mdb, *.accdb) , in not that means odbc 64 bit driver not installed.
+
+2️⃣ install odbc : from (https://www.microsoft.com/en-us/download/details.aspx?id=54920) this site but 64 bit
+     Before installation remove any previous install ms office 2007 or older because they carry odbc 32 bit.
+3️⃣ after finishing odbc 64 bit installation check again the Number-1 instruction , if the Microsoft Access Driver (*.mdb, *.accdb) is exist in driver.
+==========================================================================
+🩺  PART 7 : DEBUGGING ROUTES  (add to routes/web.php)
+==========================================================================
+
+🔍 7.1  Diagnostics
+
+   Route::get('/test-disabled-functions', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testDisabledFunctions'])->name('test.disabled');
+   Route::get('/test-artisan-command', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testArtisanCommand'])->name('test.artisan');
+   Route::get('/test-curl-status', [\App\Http\Controllers\Backend\AccessUploadController::class, 'testCurlStatus'])->name('test.curl');
+   Route::get('/api-push-queue-processor', [\App\Http\Controllers\Backend\AccessUploadController::class, 'processApiQueue'])->name('api.queue.process');
+
+🧰 7.2  Run Artisan commands on the server
+
+   Route::get('/log', function () {
+       Log::debug('This is a debug log test');
+       return 'Log written!';
+   });
+
+   Route::get('/artisan_migrate', function () {
+       Artisan::call('migrate', ['--force' => true]);
+       return 'php artisan migrate command executed successfully.';
+   });
+
+   Route::get('/artisan_optimize', function () {
+       Artisan::call('optimize:clear');
+       Artisan::call('optimize');
+       Log::debug('This is an optimize test');
+       return 'php artisan optimize command executed successfully.';
+   });
+
+   Route::get('/artisan_storage_link', function () {
+       Artisan::call('storage:link');
+       Log::info(Artisan::output());
+       return 'php artisan storage:link command executed successfully.';
+   });
+
+   Route::get('/artisan_sync', function () {
+       Artisan::call('access:sync');
+       Log::info(Artisan::output());
+       return 'php artisan access:sync command executed successfully.';
+   });
+
+   Route::get('/queue_work', function () {
+       Artisan::call('queue:work', [
+           '--once' => true,
+           '--tries' => 1,
+       ]);
+
+       return 'Queue worker ran once';
+   });
+
+🚨 SECURITY WARNING
+   These routes run migrations and other commands WITHOUT authentication.
+   Anyone who knows the URL can call them. Protect them with auth middleware
+   or an IP restriction, or remove them once debugging is finished.
+
+==========================================================================
+🏁  END OF GUIDE
+==========================================================================
