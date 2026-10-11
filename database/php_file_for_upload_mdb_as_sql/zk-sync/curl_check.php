@@ -5,7 +5,7 @@ ini_set('display_errors', 1);
 echo "SCRIPT START\n";
 
 $apiKey  = 'zk-sync-2026';
-$baseUrl = 'https://jmagc-atos.bidyapith.com';
+$baseUrl = 'https://jmagc-atos.bidyapith.com/';
 
 $ch = curl_init($baseUrl . '/api/access/config');
 curl_setopt_array($ch, [

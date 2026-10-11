@@ -8,7 +8,7 @@ echo "SCRIPT START\n";
 // ================= CONFIG ==================
 
 $apiKey  = 'zk-sync-2026';
-$baseUrl = 'https://jmagc-atos.bidyapith.com';
+$baseUrl = 'https://jmagc-atos.bidyapith.com/';
 
 $cacheFile = __DIR__ . '/config_cache.json';
 $logFile   = __DIR__ . '/error.log';
